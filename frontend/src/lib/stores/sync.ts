@@ -247,7 +247,10 @@ export async function createTask(data: Partial<Task>): Promise<Task> {
 	// Queue for sync
 	if (navigator.onLine) {
 		try {
-			const created = await apiClient.createTask(task);
+			const created = await apiClient.createTask({
+				...task,
+				notes: task.notes || undefined
+			});
 			// Update with server version
 			tasks.update((t) => t.map((item) => (item.id === task.id ? created : item)));
 			await db.saveTask(created);
@@ -295,7 +298,10 @@ export async function updateTask(id: string, data: Partial<Task>): Promise<Task 
 	// Queue for sync
 	if (navigator.onLine) {
 		try {
-			const serverUpdated = await apiClient.updateTask(id, data);
+			const serverUpdated = await apiClient.updateTask(id, {
+				...data,
+				notes: data.notes === null ? undefined : data.notes
+			});
 			// Update with server version
 			tasks.update((t) => t.map((item) => (item.id === id ? serverUpdated : item)));
 			await db.saveTask(serverUpdated);
@@ -367,10 +373,10 @@ export async function toggleTaskComplete(id: string): Promise<void> {
  * Register background sync for outbox processing
  */
 async function registerBackgroundSync(): Promise<void> {
-	if ('serviceWorker' in navigator && 'sync' in ServiceWorkerRegistration.prototype) {
+	if ('serviceWorker' in navigator && 'sync' in (ServiceWorkerRegistration.prototype as any)) {
 		try {
 			const registration = await navigator.serviceWorker.ready;
-			await registration.sync.register('haboard-sync');
+			await (registration as any).sync.register('haboard-sync');
 			console.log('Background sync registered for outbox processing');
 		} catch (error) {
 			console.warn('Background sync registration failed:', error);
