@@ -13,6 +13,7 @@ from .const import DOMAIN
 from .database import get_database, Database
 from .database.repository import TaskRepository, TagRepository
 from .database.models import Task, Tag
+from .api import setup_api, setup_websocket, WebSocketManager
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -34,12 +35,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     config_dir = Path(hass.config.path())
     db = await get_database(config_dir)
 
+    # Set up WebSocket support
+    ws_manager = setup_websocket(hass)
+
+    # Set up REST API
+    setup_api(hass)
+
     # Store database in hass.data
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = {
         "db": db,
         "task_repo": TaskRepository(db.conn),
         "tag_repo": TagRepository(db.conn),
+        "ws_manager": ws_manager,
     }
 
     # Register services
@@ -94,7 +102,9 @@ async def _register_services(hass: HomeAssistant, entry: ConfigEntry) -> None:
 
         _LOGGER.debug("Created task via service: %s", created_task.id)
 
-        # TODO: Week 3-4: Broadcast task created event via WebSocket
+        # Broadcast task created event via WebSocket
+        ws_manager: WebSocketManager = data["ws_manager"]
+        ws_manager.broadcast_task_created(created_task.to_dict())
 
     # Register services
     hass.services.async_register(

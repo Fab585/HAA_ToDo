@@ -466,8 +466,7 @@ See [Canvas 4: Phased Implementation Plan](docs/04-phased-implementation-plan.md
 - [**Development Environment**](docs/development-environment.md) ⭐ **Setup guide**
 - [**CI/CD Pipeline**](docs/ci-cd-pipeline.md) ⭐ **For contributors**
 - [**Database Schema**](docs/database-schema.md) ⭐ **Data model & API**
-- API Reference (OpenAPI) (Coming Soon)
-- WebSocket Protocol (Coming Soon)
+- [**API Reference**](docs/api-reference.md) ⭐ **REST & WebSocket API**
 - Sync & Conflict Resolution (Coming Soon)
 - Home Assistant Integration Guide (Coming Soon)
 
