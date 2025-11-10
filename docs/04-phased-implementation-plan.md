@@ -22,10 +22,72 @@ Each phase delivers **real user value** and validates assumptions before buildin
 
 | Phase | Timeline | Focus | Key Question |
 |-------|----------|-------|--------------|
-| **MVP (v0.1)** | 2-3 months | Core task management + basic HA | "Does this concept work?" |
-| **Beta (v0.5)** | 4-6 months | Daily driver + key differentiators | "Is this useful daily?" |
-| **V1.0** | 9-12 months | Feature complete + collaboration | "Is this production ready?" |
+| **MVP (v0.1)** | 6-8 weeks | Core task management + basic HA | "Does this concept work?" |
+| **Beta (v0.5)** | +14 weeks (4-6 months total) | Daily driver + key differentiators | "Is this useful daily?" |
+| **V1.0** | +32 weeks (9-12 months total) | Feature complete + collaboration | "Is this production ready?" |
 | **V2.0+** | 12+ months | Advanced features + ML | "What's next?" |
+
+---
+
+## 🗓️ Complete Timeline: Zero to V1.0 Public Release
+
+### **Phase 0: Validation Spikes (Weeks 1-2)**
+- Run 4 critical experiments to validate unknowns
+- Gate: All spikes must pass before MVP development
+
+### **Phase 1: MVP Development (Weeks 3-10)**
+- **Week 1-2:** Foundation + validation spikes
+- **Week 3-4:** Backend + sync
+- **Week 5-6:** Frontend core + offline
+- **Week 7-8:** Features + polish
+- **Week 9-10:** MVP testing with 5-10 pilot users
+- **Deliverable:** Working offline-first task app with basic HA integration
+
+### **Phase 2: Beta Development (Weeks 11-24)**
+- **Week 11-12:** Shared boards foundation
+- **Week 13-14:** Vector clocks + conflict resolution
+- **Week 15-16:** Kiosk mode
+- **Week 17-18:** Voice via Assist
+- **Week 19-20:** Presence awareness + smart digests
+- **Week 21-22:** Lovelace card + polish
+- **Week 23-24:** Beta testing with 20-50 users
+- **Deliverable:** Daily driver quality with kiosk, voice, presence
+
+### **Phase 3: V1.0 Development (Weeks 25-56)**
+- **Week 25-26:** Calendar integration
+- **Week 27-28:** Time blocking
+- **Week 29-30:** Smart suggestions
+- **Week 31-32:** Sensor-triggered tasks
+- **Week 33-34:** Device completion + zones
+- **Week 35-36:** Advanced collaboration
+- **Week 37-38:** Board sections
+- **Week 39-40:** Weekly planning ritual
+- **Week 41-42:** Grocery & errands flow
+- **Week 43-44:** Accessibility (WCAG AAA)
+- **Week 45-46:** Internationalization
+- **Week 47-48:** Security audit + polish
+- **Week 49-50:** Performance optimization
+- **Week 51-52:** Beta testing (100+ users)
+- **Week 53-54:** Production hardening
+- **Week 55-56:** Public release 🚀
+- **Deliverable:** Production-ready, feature-complete, 500+ users
+
+### **Total Timeline: 56 weeks (~13 months)**
+
+**Critical Path Dependencies:**
+- Validation spikes → MVP → Beta → V1.0
+- Each phase has Go/No-Go gate (can extend if not met)
+- User feedback loops inform next phase planning
+
+**Staffing Requirements:**
+- **Weeks 1-10 (MVP):** 1 full-stack developer
+- **Weeks 11-24 (Beta):** 1-2 full-stack developers
+- **Weeks 25-56 (V1.0):** 2 full-stack developers + part-time UX/QA
+
+**Flexibility:**
+- Each phase can extend if success metrics not met
+- Features can be deferred based on user feedback
+- Timeline assumes no major blockers or pivots
 
 ---
 
@@ -397,6 +459,84 @@ These critical flows must work flawlessly:
 - Do presence-aware reminders add value or annoy?
 - What features are requested most?
 
+### Technical Milestones (Beta)
+
+**Prerequisites:**
+- ✅ MVP deployed and validated with 5+ pilot users
+- ✅ Go decision from MVP → Beta gate
+- ✅ 20+ beta testers recruited
+
+**Week 1-2: Shared Boards Foundation**
+- [ ] Database migration: Add `boards`, `board_members`, `assignee_user_id` columns
+- [ ] Migration script with rollback (see Migration Strategy section)
+- [ ] API endpoints: Board CRUD, member management
+- [ ] Frontend: Board selector, member invitation UI
+- [ ] Update existing tasks to default "Personal" board
+
+**Week 3-4: Vector Clocks + Improved Conflict Resolution**
+- [ ] Add `vector_clock` JSONB column to tasks table
+- [ ] Implement vector clock increment/merge logic
+- [ ] Per-field conflict resolution (title → conflict UI)
+- [ ] Side-by-side diff viewer for concurrent title changes
+- [ ] Update sync protocol to include vector clocks
+- [ ] Migration: Initialize vector clocks from LWW timestamps
+
+**Week 5-6: Kiosk Mode**
+- [ ] `/kiosk` route with fullscreen layout
+- [ ] Large touch targets (≥56px), high-contrast design
+- [ ] Today/Overdue/Mine filter chips
+- [ ] Ambient mode: 2-min idle → show next 3 tasks + time/weather
+- [ ] Performance optimization: cold start <3s on Fire HD 8
+- [ ] E2E test: kiosk flow on tablet viewport
+
+**Week 7-8: Voice via Home Assistant Assist**
+- [ ] Define Assist intents: `AddTodo`, `ListToday`, `CompleteTodo`
+- [ ] Intent handlers in HA integration (Python)
+- [ ] Sentence templates with slot filling (board, due date, task)
+- [ ] Confirmation: spoken response + visual Undo chip
+- [ ] Test with 20 voice phrases; measure accuracy
+
+**Week 9-10: Presence Awareness + Smart Digests**
+- [ ] Subscribe to HA `person` entity state changes
+- [ ] Notification deferral logic (if nobody home → defer to arrival + 30 min)
+- [ ] Arrival notification: "3 tasks waiting for you"
+- [ ] Service Worker: schedule morning (08:00) and evening (18:00) digests
+- [ ] Settings: "Notify me anyway" override
+
+**Week 11-12: Lovelace Card + Polish**
+- [ ] Lit custom card: `type: custom:haboard-card`
+- [ ] Config options: board, view (today/week/all), max items
+- [ ] Bridge: postMessage or shared WebSocket topic
+- [ ] HACS integration for easy distribution
+- [ ] Actionable notifications: Add Complete and Snooze buttons
+- [ ] Bug fixes from beta tester feedback
+- [ ] Deploy to all 20+ beta testers
+
+**Week 13-14: Beta Testing & Feedback**
+- [ ] 4-week beta testing period
+- [ ] Weekly feedback sessions with testers
+- [ ] Bug fixes and polish based on feedback
+- [ ] Collect metrics: DAU, session time, kiosk usage, voice accuracy
+- [ ] Go/No-Go review for V1.0
+
+### Phase Transition: MVP → Beta Checklist
+
+**Before starting Beta development:**
+- [ ] MVP deployed for 2+ weeks with 5+ pilot users
+- [ ] All MVP success metrics met (see MVP Success Metrics section)
+- [ ] User feedback collected and analyzed
+- [ ] Go decision from stakeholder review
+- [ ] Beta testers recruited (20-50 people)
+- [ ] Beta feedback channel set up (Discord/GitHub Discussions)
+
+**Migration tasks:**
+- [ ] Backup all user data (SQLite export)
+- [ ] Run database migration (add boards, vector_clocks)
+- [ ] Validate migration: spot-check 10 tasks
+- [ ] Deploy new integration version
+- [ ] Deploy new PWA version
+- [ ] Monitor for 48 hours: error rates, sync reliability
+
 ---
 
 ## 🏆 V1.0 — "Feature Complete"
@@ -509,6 +649,167 @@ These critical flows must work flawlessly:
 - ✅ Security audit passed (no critical vulnerabilities)
 - ✅ Accessibility audit passed (axe-core + manual testing)
 - ✅ 5 pilot families complete flows without guidance
+
+### Technical Milestones (V1.0)
+
+**Prerequisites:**
+- ✅ Beta deployed for 4+ weeks with 20+ users
+- ✅ Go decision from Beta → V1.0 gate
+- ✅ 100+ beta testers recruited for V1.0
+- ✅ Optional: PostgreSQL upgrade completed (if needed for scale)
+
+**Week 1-2: Calendar Integration Foundation**
+- [ ] Add `calendar_blocks` table for time blocks
+- [ ] HA calendar entity: `calendar.<board>_deadlines`
+- [ ] API: Read HA calendar events, create time blocks
+- [ ] Frontend: Calendar view (week grid with tasks + events)
+- [ ] Drag task to day → set due date
+- [ ] E2E test: drag task, verify due date updated
+
+**Week 3-4: Time Blocking**
+- [ ] Task duration field (15m, 30m, 1h, 2h, custom)
+- [ ] Create calendar block from task (duration → block)
+- [ ] Conflict detection: warn when overbooking
+- [ ] Sync with HA calendar (bidirectional)
+- [ ] Settings: Working hours, break times
+
+**Week 5-6: Smart Suggestions (Weather + Energy)**
+- [ ] Weather integration: subscribe to HA weather entity
+- [ ] Rule engine: "Mow lawn" → suggest next dry daylight window
+- [ ] Energy tariff: subscribe to `sensor.energy_price`
+- [ ] Rule: "Run dishwasher" → suggest low-rate window
+- [ ] User feedback: Accept/Reject buttons; track for ML
+- [ ] Settings: Enable/disable suggestion categories
+
+**Week 7-8: Sensor-Triggered Tasks**
+- [ ] Event listener: HA state changes (washer done, low battery, etc.)
+- [ ] Trigger config: Define sensor → task mappings (UI or YAML)
+- [ ] Auto-create task on trigger: "Move laundry to dryer" (20 min due)
+- [ ] Notification: "Task created by automation"
+- [ ] Examples: HVAC runtime, battery levels, door/window sensors
+
+**Week 9-10: Device-Linked Completion + Zone Notifications**
+- [ ] Device completion: Listen for scene/script/automation completion
+- [ ] Auto-complete linked tasks: "Vacuum living room" done when robot finishes
+- [ ] Zone-based notifications: Enter grocery zone → show grocery list
+- [ ] Geofence setup: Map HA zones to task boards/tags
+- [ ] Settings: Enable/disable zone notifications
+
+**Week 11-12: Advanced Collaboration (Roles + Activity Log)**
+- [ ] Per-board roles: Viewer, Commenter, Editor
+- [ ] Role enforcement: API + UI permission checks
+- [ ] Activity log: `activity_log` table (append-only)
+- [ ] Activity UI: Filter by user, action type, date range
+- [ ] Export activity: CSV/JSON download
+- [ ] Private tasks: Visible only to creator + assignee
+
+**Week 13-14: Board Organization (Sections/Pages)**
+- [ ] Add `sections` table: belongs to board
+- [ ] Section CRUD: API + UI
+- [ ] Drag tasks between sections (preserve metadata)
+- [ ] Collapsible sections: Show progress bar, next due task
+- [ ] Section templates: "Project", "Routine", "Errands"
+
+**Week 15-16: Weekly Planning Ritual**
+- [ ] Service Worker: Sunday 18:00 prompt "Plan your week?"
+- [ ] Planning mode UI: Show unscheduled tasks + overdue
+- [ ] Auto-distribute: Spread tasks across week (algorithm)
+- [ ] Drag to refine schedule before saving
+- [ ] Save → bulk update due dates
+- [ ] Settings: Planning day/time customization
+
+**Week 17-18: Grocery & Errands Flow**
+- [ ] "Shopping mode": Optimized for in-store use
+- [ ] Aisle/category organization (user-defined)
+- [ ] Quick add from template: common items
+- [ ] Share list: QR code or link
+- [ ] Mark items as "in cart" (visual feedback)
+- [ ] Auto-archive: completed items after 24h
+
+**Week 19-20: Accessibility (WCAG AAA)**
+- [ ] Contrast audit: All colors ≥7:1 ratio
+- [ ] Screen reader testing: NVDA (Windows) + VoiceOver (iOS/Mac)
+- [ ] Keyboard navigation: All interactions accessible (Tab, Enter, Escape, Arrow keys)
+- [ ] ARIA labels: All interactive elements properly labeled
+- [ ] Focus indicators: High-contrast, visible on all elements
+- [ ] Motion-reduced mode: Respect `prefers-reduced-motion`
+- [ ] Child mode: Larger targets (72px), simplified UI
+- [ ] Accessibility statement page
+
+**Week 21-22: Internationalization (i18n)**
+- [ ] `svelte-i18n` setup: Extract all strings to locale files
+- [ ] Locale files: en-US, es-ES, fr-FR, de-DE, pt-BR (initial set)
+- [ ] RTL support: CSS logical properties (start/end vs left/right)
+- [ ] Timezone handling: `Intl.DateTimeFormat`, DST-safe
+- [ ] Localized NLP: chrono multi-locale parsing
+- [ ] Currency/number formatting: `Intl.NumberFormat`
+- [ ] Date/time formatting: User's locale preference
+- [ ] Locale detection: HA user settings → browser → default
+
+**Week 23-24: Security Audit + Polish**
+- [ ] Security audit: OWASP Top 10 review
+- [ ] SQL injection prevention: Parameterized queries (verify)
+- [ ] XSS prevention: Sanitize all user input
+- [ ] CSRF protection: Verify tokens on all mutations
+- [ ] Rate limiting: API endpoints (prevent abuse)
+- [ ] Content Security Policy: Strict CSP headers
+- [ ] Dependency audit: `npm audit`, `safety` (Python)
+- [ ] Penetration testing: Hire external auditor or run automated tools
+
+**Week 25-26: Performance Optimization**
+- [ ] Bundle analysis: Lazy-load non-critical features
+- [ ] Image optimization: WebP, responsive sizes
+- [ ] Database optimization: Query profiling, add indexes
+- [ ] Cache tuning: Service Worker strategies
+- [ ] Lighthouse CI: Enforce scores ≥90
+- [ ] Load testing: Simulate 1000 concurrent users
+- [ ] Memory leak detection: Chrome DevTools profiling
+
+**Week 27-28: Beta Testing (100+ users)**
+- [ ] Deploy V1.0 beta to 100+ testers
+- [ ] 4-week beta testing period
+- [ ] Weekly feedback sessions (online meetings)
+- [ ] Bug triage: Prioritize critical/high bugs
+- [ ] Performance monitoring: Sentry, LogRocket
+- [ ] User surveys: NPS, feature satisfaction
+- [ ] Go/No-Go review for public release
+
+**Week 29-30: Production Hardening + Launch Prep**
+- [ ] Final bug fixes from beta feedback
+- [ ] Production infrastructure: Monitoring, alerting
+- [ ] Rollback plan: Document and test
+- [ ] Launch checklist: All quality gates passed
+- [ ] Marketing materials: Screenshots, demo video
+- [ ] Documentation: User guides, API docs
+- [ ] Community engagement: HA forums, Reddit, Discord
+- [ ] Press release: Home Assistant blog, social media
+
+**Week 31-32: Public Release 🚀**
+- [ ] Deploy to production
+- [ ] Announce on HA community forums
+- [ ] HACS listing (if not already)
+- [ ] Monitor for 72 hours: Error rates, performance
+- [ ] Hotfix any critical issues
+- [ ] Celebrate! 🎉
+
+### Phase Transition: Beta → V1.0 Checklist
+
+**Before starting V1.0 development:**
+- [ ] Beta deployed for 4+ weeks with 20+ daily users
+- [ ] All Beta success metrics met (see Beta Success Metrics section)
+- [ ] User feedback analyzed: prioritize most-requested features
+- [ ] Go decision from stakeholder review
+- [ ] 100+ beta testers recruited for V1.0
+- [ ] PostgreSQL upgrade completed (if performance requires it)
+- [ ] V1.0 roadmap reviewed and approved
+
+**Migration tasks:**
+- [ ] Backup all user data (SQLite/PostgreSQL export)
+- [ ] Run database migration (add calendar_blocks, sections, activity_log, roles)
+- [ ] Validate migration: automated tests + manual spot-checks
+- [ ] Deploy new integration version (staged rollout)
+- [ ] Deploy new PWA version (staged rollout)
+- [ ] Monitor for 1 week: error rates, sync reliability, user reports
 
 ---
 

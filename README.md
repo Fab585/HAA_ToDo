@@ -44,21 +44,28 @@ This repository contains comprehensive planning documents that define the produc
 
 We're taking an **incremental delivery approach** that ships value early while building toward the full vision:
 
-- **MVP (v0.1)** — **6-8 weeks** *(reduced from 12 weeks)*: Core task management + offline sync + basic HA integration
+- **MVP (v0.1)** — **6-8 weeks** *(Weeks 1-10)*: Core task management + offline sync + basic HA integration
   - **Scope:** 5 core user stories (reduced from 8)
   - **Tech:** SQLite + Hybrid conflict resolution (LWW + simple CRDT)
   - **Goal:** Validate concept with 5-10 pilot users
-- **Beta (v0.5)** — 4-6 months: + Kiosk mode + voice control + presence awareness + shared boards
-- **V1.0** — 9-12 months: + Full collaboration + calendar + smart suggestions
-- **V2.0+** — 12+ months: + ML features + multi-home sync + integrations
+- **Beta (v0.5)** — **+14 weeks** *(Weeks 11-24, ~6 months total)*: + Kiosk mode + voice control + presence awareness + shared boards
+  - **Adds:** 8 user stories for daily driver quality
+  - **Goal:** 20-50 beta testers; kiosk validated
+- **V1.0** — **+32 weeks** *(Weeks 25-56, ~13 months total)*: + Full collaboration + calendar + smart suggestions
+  - **Adds:** 17 user stories for production readiness
+  - **Goal:** Public release, 500+ monthly active users
+- **V2.0+** — **12+ months**: + ML features + multi-home sync + integrations
+
+**Complete Timeline: 56 weeks (~13 months) from start to public release**
 
 **Key Changes:**
 - ✅ SQLite-first (not PostgreSQL) — simpler setup, Pi-friendly
 - ✅ Reduced MVP scope — ships faster, validates earlier
 - ✅ Validation spikes before building — de-risks unknowns
 - ✅ Hybrid conflict resolution — prevents data loss without full CRDT complexity
+- ✅ **Detailed week-by-week plan** — clear path from zero to V1.0
 
-See **[Canvas 4: Phased Implementation Plan](docs/04-phased-implementation-plan.md)** for complete details.
+See **[Canvas 4: Phased Implementation Plan](docs/04-phased-implementation-plan.md)** for complete week-by-week details.
 
 ---
 
@@ -404,17 +411,32 @@ npm run dev
 - [ ] Recruit 5-10 pilot testers
 - [ ] Finalize MVP scope with stakeholders
 
-### MVP Roadmap (Weeks 3-12)
-- [ ] Database schema + HA integration skeleton
-- [ ] REST API + WebSocket sync
-- [ ] SvelteKit PWA with offline support
-- [ ] Core features (quick add, swipe gestures, search)
-- [ ] Deploy to pilot users
+### Complete Development Roadmap (56 weeks)
 
-### Long-Term Milestones
-- [ ] Beta (v0.5) — 4-6 months: +Kiosk +Voice +Presence
-- [ ] V1.0 — 9-12 months: +Calendar +Smart suggestions +Full collaboration
-- [ ] Public release — Month 13
+**Phase 1: MVP (Weeks 1-10)**
+- Week 1-2: Validation spikes + foundation
+- Week 3-4: Backend + sync
+- Week 5-6: Frontend + offline
+- Week 7-8: Features + polish
+- Week 9-10: MVP testing
+
+**Phase 2: Beta (Weeks 11-24)**
+- Week 11-12: Shared boards
+- Week 13-14: Vector clocks
+- Week 15-16: Kiosk mode
+- Week 17-18: Voice via Assist
+- Week 19-20: Presence + digests
+- Week 21-22: Lovelace card
+- Week 23-24: Beta testing
+
+**Phase 3: V1.0 (Weeks 25-56)**
+- Week 25-28: Calendar + time blocking
+- Week 29-34: Smart features (suggestions, sensors, zones)
+- Week 35-42: Collaboration + organization
+- Week 43-50: Accessibility + i18n + security + performance
+- Week 51-56: Beta testing + production hardening + launch
+
+**Public Release: Week 56** 🚀
 
 ---
 
