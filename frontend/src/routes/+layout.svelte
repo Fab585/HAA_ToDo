@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { syncWithServer } from '$lib/stores/sync';
+	import Toast from '$lib/components/Toast.svelte';
 	import '../app.css';
 
 	onMount(() => {
@@ -69,3 +70,6 @@
 <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
 	<slot />
 </div>
+
+<!-- Toast notifications -->
+<Toast />

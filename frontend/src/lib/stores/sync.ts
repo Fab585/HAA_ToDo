@@ -2,10 +2,11 @@
  * Sync manager for offline-first task synchronization
  */
 import { writable, derived, get } from 'svelte/store';
-import { apiClient } from '../api/client';
+import { apiClient, APIError } from '../api/client';
 import { createWSClient, type HABoardWSClient } from '../api/websocket';
 import type { Task, Tag } from '../types/task';
 import * as db from './db';
+import { showSuccess, showError, showWarning } from './notifications';
 
 /**
  * Sync state
@@ -131,6 +132,7 @@ async function handleOnline(): Promise<void> {
 	console.log('Device is online');
 	isOnline.set(true);
 	syncError.set(null);
+	showSuccess('Connection restored - syncing...');
 
 	// Sync with server
 	await syncWithServer();
@@ -181,7 +183,9 @@ export async function syncWithServer(): Promise<void> {
 		console.log('Sync completed successfully');
 	} catch (error) {
 		console.error('Sync failed:', error);
-		syncError.set(error instanceof Error ? error.message : 'Sync failed');
+		const errorMessage = error instanceof APIError ? error.message : 'Sync failed';
+		syncError.set(errorMessage);
+		showError(`Sync failed: ${errorMessage}`);
 	} finally {
 		isSyncing.set(false);
 	}
@@ -247,17 +251,20 @@ export async function createTask(data: Partial<Task>): Promise<Task> {
 			// Update with server version
 			tasks.update((t) => t.map((item) => (item.id === task.id ? created : item)));
 			await db.saveTask(created);
+			showSuccess('Task created successfully');
 			return created;
 		} catch (error) {
 			console.error('Failed to create task on server:', error);
 			// Add to outbox for later sync
 			await db.addToOutbox('create', task.id, task);
 			await registerBackgroundSync();
+			showWarning('Task saved offline - will sync when connection restored');
 		}
 	} else {
 		// Add to outbox for later sync
 		await db.addToOutbox('create', task.id, task);
 		await registerBackgroundSync();
+		showWarning('Working offline - task will sync when connection restored');
 	}
 
 	return task;
@@ -292,17 +299,20 @@ export async function updateTask(id: string, data: Partial<Task>): Promise<Task 
 			// Update with server version
 			tasks.update((t) => t.map((item) => (item.id === id ? serverUpdated : item)));
 			await db.saveTask(serverUpdated);
+			showSuccess('Task updated successfully');
 			return serverUpdated;
 		} catch (error) {
 			console.error('Failed to update task on server:', error);
 			// Add to outbox for later sync
 			await db.addToOutbox('update', id, data);
 			await registerBackgroundSync();
+			showWarning('Task saved offline - will sync when connection restored');
 		}
 	} else {
 		// Add to outbox for later sync
 		await db.addToOutbox('update', id, data);
 		await registerBackgroundSync();
+		showWarning('Working offline - changes will sync when connection restored');
 	}
 
 	return updated;
@@ -320,16 +330,19 @@ export async function deleteTask(id: string): Promise<void> {
 	if (navigator.onLine) {
 		try {
 			await apiClient.deleteTask(id);
+			showSuccess('Task deleted successfully');
 		} catch (error) {
 			console.error('Failed to delete task on server:', error);
 			// Add to outbox for later sync
 			await db.addToOutbox('delete', id);
 			await registerBackgroundSync();
+			showWarning('Task deleted locally - will sync when connection restored');
 		}
 	} else {
 		// Add to outbox for later sync
 		await db.addToOutbox('delete', id);
 		await registerBackgroundSync();
+		showWarning('Working offline - deletion will sync when connection restored');
 	}
 }
 

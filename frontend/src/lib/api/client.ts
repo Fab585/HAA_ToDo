@@ -19,10 +19,33 @@ interface ApiConfig {
 }
 
 /**
+ * API Error with additional context
+ */
+export class APIError extends Error {
+	constructor(
+		message: string,
+		public status?: number,
+		public retryable: boolean = false
+	) {
+		super(message);
+		this.name = 'APIError';
+	}
+}
+
+/**
+ * Sleep utility for retry delays
+ */
+function sleep(ms: number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
  * API client for HABoard
  */
 export class HABoardAPIClient {
 	private config: ApiConfig;
+	private maxRetries = 3;
+	private retryDelay = 1000; // Initial delay in ms
 
 	constructor(config: ApiConfig) {
 		this.config = config;
@@ -36,11 +59,24 @@ export class HABoardAPIClient {
 	}
 
 	/**
-	 * Make authenticated request
+	 * Check if error is retryable
+	 */
+	private isRetryable(status?: number): boolean {
+		// Retry on network errors (no status) or specific HTTP status codes
+		if (!status) return true; // Network error
+		if (status >= 500 && status < 600) return true; // Server errors
+		if (status === 429) return true; // Rate limit
+		if (status === 408) return true; // Request timeout
+		return false;
+	}
+
+	/**
+	 * Make authenticated request with retry logic
 	 */
 	private async request<T>(
 		endpoint: string,
-		options: RequestInit = {}
+		options: RequestInit = {},
+		retryCount = 0
 	): Promise<T> {
 		const url = `${this.config.baseUrl}${endpoint}`;
 
@@ -53,24 +89,60 @@ export class HABoardAPIClient {
 			headers['Authorization'] = `Bearer ${this.config.accessToken}`;
 		}
 
-		const response = await fetch(url, {
-			...options,
-			headers
-		});
+		try {
+			const response = await fetch(url, {
+				...options,
+				headers
+			});
 
-		if (!response.ok) {
-			const error = await response.json().catch(() => ({
-				message: response.statusText
-			}));
-			throw new Error(error.message || `HTTP ${response.status}`);
+			if (!response.ok) {
+				const error = await response.json().catch(() => ({
+					message: response.statusText
+				}));
+
+				const apiError = new APIError(
+					error.message || `HTTP ${response.status}`,
+					response.status,
+					this.isRetryable(response.status)
+				);
+
+				// Retry if retryable and we haven't exceeded max retries
+				if (apiError.retryable && retryCount < this.maxRetries) {
+					const delay = this.retryDelay * Math.pow(2, retryCount);
+					console.log(`Request failed, retrying in ${delay}ms... (attempt ${retryCount + 1}/${this.maxRetries})`);
+					await sleep(delay);
+					return this.request<T>(endpoint, options, retryCount + 1);
+				}
+
+				throw apiError;
+			}
+
+			// Handle 204 No Content
+			if (response.status === 204) {
+				return {} as T;
+			}
+
+			return response.json();
+		} catch (error) {
+			// Network error (fetch failed)
+			if (error instanceof APIError) {
+				throw error;
+			}
+
+			// Retry network errors
+			if (retryCount < this.maxRetries) {
+				const delay = this.retryDelay * Math.pow(2, retryCount);
+				console.log(`Network error, retrying in ${delay}ms... (attempt ${retryCount + 1}/${this.maxRetries})`);
+				await sleep(delay);
+				return this.request<T>(endpoint, options, retryCount + 1);
+			}
+
+			throw new APIError(
+				error instanceof Error ? error.message : 'Network request failed',
+				undefined,
+				true
+			);
 		}
-
-		// Handle 204 No Content
-		if (response.status === 204) {
-			return {} as T;
-		}
-
-		return response.json();
 	}
 
 	/**
