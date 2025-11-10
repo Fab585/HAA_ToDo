@@ -1,17 +1,17 @@
 /**
  * Sync manager for offline-first task synchronization
  */
-import { writable, derived, get } from 'svelte/store';
-import { apiClient, APIError } from '../api/client';
-import { createWSClient, type HABoardWSClient } from '../api/websocket';
-import type { Task, Tag } from '../types/task';
-import * as db from './db';
-import { showSuccess, showError, showWarning } from './notifications';
+import { writable, derived, get } from "svelte/store";
+import { apiClient, APIError } from "../api/client";
+import { createWSClient, type HABoardWSClient } from "../api/websocket";
+import type { Task, Tag } from "../types/task";
+import * as db from "./db";
+import { showSuccess, showError, showWarning } from "./notifications";
 
 /**
  * Sync state
  */
-export const isOnline = writable(navigator.onLine);
+export const isOnline = writable(typeof navigator !== "undefined" ? navigator.onLine : false);
 export const isSyncing = writable(false);
 export const lastSyncTime = writable<number>(0);
 export const syncError = writable<string | null>(null);
@@ -26,26 +26,30 @@ export const tags = writable<Tag[]>([]);
  * Filtered tasks
  */
 export const incompleteTasks = derived(tasks, ($tasks) =>
-	$tasks.filter((t) => !t.completed).sort((a, b) => {
-		// Sort by priority (high to low), then by due date
-		if (a.priority !== b.priority) {
-			return b.priority - a.priority;
-		}
-		if (a.due_date && b.due_date) {
-			return a.due_date.localeCompare(b.due_date);
-		}
-		return 0;
-	})
+  $tasks
+    .filter((t) => !t.completed)
+    .sort((a, b) => {
+      // Sort by priority (high to low), then by due date
+      if (a.priority !== b.priority) {
+        return b.priority - a.priority;
+      }
+      if (a.due_date && b.due_date) {
+        return a.due_date.localeCompare(b.due_date);
+      }
+      return 0;
+    })
 );
 
 export const completedTasks = derived(tasks, ($tasks) =>
-	$tasks.filter((t) => t.completed).sort((a, b) => {
-		// Sort by completion date (newest first)
-		if (a.completed_at && b.completed_at) {
-			return b.completed_at.localeCompare(a.completed_at);
-		}
-		return 0;
-	})
+  $tasks
+    .filter((t) => t.completed)
+    .sort((a, b) => {
+      // Sort by completion date (newest first)
+      if (a.completed_at && b.completed_at) {
+        return b.completed_at.localeCompare(a.completed_at);
+      }
+      return 0;
+    })
 );
 
 /**
@@ -57,342 +61,350 @@ let wsClient: HABoardWSClient | null = null;
  * Initialize sync system
  */
 export async function initSync(accessToken?: string): Promise<void> {
-	// Initialize IndexedDB
-	await db.initDB();
+  // Initialize IndexedDB
+  await db.initDB();
 
-	// Load last sync time
-	const lastSync = await db.getLastSyncTime();
-	lastSyncTime.set(lastSync);
+  // Load last sync time
+  const lastSync = await db.getLastSyncTime();
+  lastSyncTime.set(lastSync);
 
-	// Load cached data from IndexedDB
-	const [cachedTasks, cachedTags] = await Promise.all([db.getAllTasks(), db.getAllTags()]);
+  // Load cached data from IndexedDB
+  const [cachedTasks, cachedTags] = await Promise.all([db.getAllTasks(), db.getAllTags()]);
 
-	tasks.set(cachedTasks);
-	tags.set(cachedTags);
+  tasks.set(cachedTasks);
+  tags.set(cachedTags);
 
-	// Set up online/offline event listeners
-	window.addEventListener('online', handleOnline);
-	window.addEventListener('offline', handleOffline);
+  // Set up online/offline event listeners (browser only)
+  if (typeof window !== "undefined") {
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
 
-	// Initialize WebSocket if online
-	if (navigator.onLine && accessToken) {
-		initWebSocket(accessToken);
-	}
+    // Initialize WebSocket if online
+    if (navigator.onLine && accessToken) {
+      initWebSocket(accessToken);
+    }
 
-	// Initial sync if online
-	if (navigator.onLine) {
-		await syncWithServer();
-	}
+    // Initial sync if online
+    if (navigator.onLine) {
+      await syncWithServer();
+    }
+  }
 }
 
 /**
  * Initialize WebSocket connection
  */
 function initWebSocket(accessToken: string): void {
-	wsClient = createWSClient(accessToken);
+  wsClient = createWSClient(accessToken);
 
-	wsClient.setHandlers({
-		onConnected: () => {
-			console.log('WebSocket connected');
-			wsClient?.subscribe();
-		},
-		onDisconnected: () => {
-			console.log('WebSocket disconnected');
-		},
-		onTaskCreated: async (task) => {
-			console.log('Task created remotely:', task);
-			// Add to local store and IndexedDB
-			tasks.update((t) => [...t, task]);
-			await db.saveTask(task);
-		},
-		onTaskUpdated: async (task) => {
-			console.log('Task updated remotely:', task);
-			// Update in local store and IndexedDB
-			tasks.update((t) => t.map((item) => (item.id === task.id ? task : item)));
-			await db.saveTask(task);
-		},
-		onTaskDeleted: async (taskId) => {
-			console.log('Task deleted remotely:', taskId);
-			// Remove from local store and IndexedDB
-			tasks.update((t) => t.filter((item) => item.id !== taskId));
-			await db.deleteTask(taskId);
-		},
-		onError: (error) => {
-			console.error('WebSocket error:', error);
-		}
-	});
+  wsClient.setHandlers({
+    onConnected: () => {
+      console.log("WebSocket connected");
+      wsClient?.subscribe();
+    },
+    onDisconnected: () => {
+      console.log("WebSocket disconnected");
+    },
+    onTaskCreated: async (task) => {
+      console.log("Task created remotely:", task);
+      // Add to local store and IndexedDB
+      tasks.update((t) => [...t, task]);
+      await db.saveTask(task);
+    },
+    onTaskUpdated: async (task) => {
+      console.log("Task updated remotely:", task);
+      // Update in local store and IndexedDB
+      tasks.update((t) => t.map((item) => (item.id === task.id ? task : item)));
+      await db.saveTask(task);
+    },
+    onTaskDeleted: async (taskId) => {
+      console.log("Task deleted remotely:", taskId);
+      // Remove from local store and IndexedDB
+      tasks.update((t) => t.filter((item) => item.id !== taskId));
+      await db.deleteTask(taskId);
+    },
+    onError: (error) => {
+      console.error("WebSocket error:", error);
+    },
+  });
 
-	wsClient.connect();
+  wsClient.connect();
 }
 
 /**
  * Handle going online
  */
 async function handleOnline(): Promise<void> {
-	console.log('Device is online');
-	isOnline.set(true);
-	syncError.set(null);
-	showSuccess('Connection restored - syncing...');
+  console.log("Device is online");
+  isOnline.set(true);
+  syncError.set(null);
+  showSuccess("Connection restored - syncing...");
 
-	// Sync with server
-	await syncWithServer();
+  // Sync with server
+  await syncWithServer();
 }
 
 /**
  * Handle going offline
  */
 function handleOffline(): void {
-	console.log('Device is offline');
-	isOnline.set(false);
+  console.log("Device is offline");
+  isOnline.set(false);
 }
 
 /**
  * Sync with server
  */
 export async function syncWithServer(): Promise<void> {
-	if (!navigator.onLine) {
-		console.log('Cannot sync: offline');
-		return;
-	}
+  if (!navigator.onLine) {
+    console.log("Cannot sync: offline");
+    return;
+  }
 
-	isSyncing.set(true);
-	syncError.set(null);
+  isSyncing.set(true);
+  syncError.set(null);
 
-	try {
-		// 1. Process outbox (send pending changes)
-		await processOutbox();
+  try {
+    // 1. Process outbox (send pending changes)
+    await processOutbox();
 
-		// 2. Fetch latest data from server
-		const [serverTasks, serverTags] = await Promise.all([
-			apiClient.listTasks({ limit: 1000 }),
-			apiClient.listTags()
-		]);
+    // 2. Fetch latest data from server
+    const [serverTasks, serverTags] = await Promise.all([
+      apiClient.listTasks({ limit: 1000 }),
+      apiClient.listTags(),
+    ]);
 
-		// 3. Merge with local data (server wins for conflicts in MVP)
-		tasks.set(serverTasks);
-		tags.set(serverTags);
+    // 3. Merge with local data (server wins for conflicts in MVP)
+    tasks.set(serverTasks);
+    tags.set(serverTags);
 
-		// 4. Save to IndexedDB
-		await Promise.all([db.saveTasks(serverTasks), db.saveTags(serverTags)]);
+    // 4. Save to IndexedDB
+    await Promise.all([db.saveTasks(serverTasks), db.saveTags(serverTags)]);
 
-		// 5. Update last sync time
-		const now = Date.now();
-		lastSyncTime.set(now);
-		await db.setLastSyncTime(now);
+    // 5. Update last sync time
+    const now = Date.now();
+    lastSyncTime.set(now);
+    await db.setLastSyncTime(now);
 
-		console.log('Sync completed successfully');
-	} catch (error) {
-		console.error('Sync failed:', error);
-		const errorMessage = error instanceof APIError ? error.message : 'Sync failed';
-		syncError.set(errorMessage);
-		showError(`Sync failed: ${errorMessage}`);
-	} finally {
-		isSyncing.set(false);
-	}
+    console.log("Sync completed successfully");
+  } catch (error) {
+    console.error("Sync failed:", error);
+    const errorMessage = error instanceof APIError ? error.message : "Sync failed";
+    syncError.set(errorMessage);
+    showError(`Sync failed: ${errorMessage}`);
+  } finally {
+    isSyncing.set(false);
+  }
 }
 
 /**
  * Process outbox (send pending changes to server)
  */
 async function processOutbox(): Promise<void> {
-	const outboxItems = await db.getOutboxItems();
+  const outboxItems = await db.getOutboxItems();
 
-	for (const item of outboxItems) {
-		try {
-			switch (item.action) {
-				case 'create':
-					await apiClient.createTask(item.data);
-					break;
-				case 'update':
-					await apiClient.updateTask(item.taskId, item.data);
-					break;
-				case 'delete':
-					await apiClient.deleteTask(item.taskId);
-					break;
-			}
+  for (const item of outboxItems) {
+    try {
+      switch (item.action) {
+        case "create":
+          await apiClient.createTask(item.data);
+          break;
+        case "update":
+          await apiClient.updateTask(item.taskId, item.data);
+          break;
+        case "delete":
+          await apiClient.deleteTask(item.taskId);
+          break;
+      }
 
-			// Remove from outbox on success
-			await db.removeFromOutbox(item.id);
-		} catch (error) {
-			console.error('Failed to process outbox item:', item, error);
-			// Keep in outbox for retry
-		}
-	}
+      // Remove from outbox on success
+      await db.removeFromOutbox(item.id);
+    } catch (error) {
+      console.error("Failed to process outbox item:", item, error);
+      // Keep in outbox for retry
+    }
+  }
 }
 
 /**
  * Create task (offline-first)
  */
 export async function createTask(data: Partial<Task>): Promise<Task> {
-	const task: Task = {
-		id: crypto.randomUUID(),
-		title: data.title || '',
-		notes: data.notes || null,
-		due_date: data.due_date || null,
-		due_time: data.due_time || null,
-		priority: data.priority || 0,
-		completed: false,
-		completed_at: null,
-		created_at: new Date().toISOString(),
-		modified_at: new Date().toISOString(),
-		device_id: 'web_client',
-		version: 1,
-		tags: data.tags || []
-	};
+  const task: Task = {
+    id: crypto.randomUUID(),
+    title: data.title || "",
+    notes: data.notes || null,
+    due_date: data.due_date || null,
+    due_time: data.due_time || null,
+    priority: data.priority || 0,
+    completed: false,
+    completed_at: null,
+    created_at: new Date().toISOString(),
+    modified_at: new Date().toISOString(),
+    device_id: "web_client",
+    version: 1,
+    tags: data.tags || [],
+  };
 
-	// Save locally
-	tasks.update((t) => [...t, task]);
-	await db.saveTask(task);
+  // Save locally
+  tasks.update((t) => [...t, task]);
+  await db.saveTask(task);
 
-	// Queue for sync
-	if (navigator.onLine) {
-		try {
-			const created = await apiClient.createTask({
-				...task,
-				notes: task.notes || undefined
-			});
-			// Update with server version
-			tasks.update((t) => t.map((item) => (item.id === task.id ? created : item)));
-			await db.saveTask(created);
-			showSuccess('Task created successfully');
-			return created;
-		} catch (error) {
-			console.error('Failed to create task on server:', error);
-			// Add to outbox for later sync
-			await db.addToOutbox('create', task.id, task);
-			await registerBackgroundSync();
-			showWarning('Task saved offline - will sync when connection restored');
-		}
-	} else {
-		// Add to outbox for later sync
-		await db.addToOutbox('create', task.id, task);
-		await registerBackgroundSync();
-		showWarning('Working offline - task will sync when connection restored');
-	}
+  // Queue for sync
+  if (navigator.onLine) {
+    try {
+      const created = await apiClient.createTask({
+        ...task,
+        notes: task.notes || undefined,
+        due_date: task.due_date || undefined,
+        due_time: task.due_time || undefined,
+      });
+      // Update with server version
+      tasks.update((t) => t.map((item) => (item.id === task.id ? created : item)));
+      await db.saveTask(created);
+      showSuccess("Task created successfully");
+      return created;
+    } catch (error) {
+      console.error("Failed to create task on server:", error);
+      // Add to outbox for later sync
+      await db.addToOutbox("create", task.id, task);
+      await registerBackgroundSync();
+      showWarning("Task saved offline - will sync when connection restored");
+    }
+  } else {
+    // Add to outbox for later sync
+    await db.addToOutbox("create", task.id, task);
+    await registerBackgroundSync();
+    showWarning("Working offline - task will sync when connection restored");
+  }
 
-	return task;
+  return task;
 }
 
 /**
  * Update task (offline-first)
  */
 export async function updateTask(id: string, data: Partial<Task>): Promise<Task | null> {
-	const currentTasks = get(tasks);
-	const existing = currentTasks.find((t) => t.id === id);
+  const currentTasks = get(tasks);
+  const existing = currentTasks.find((t) => t.id === id);
 
-	if (!existing) {
-		return null;
-	}
+  if (!existing) {
+    return null;
+  }
 
-	const updated: Task = {
-		...existing,
-		...data,
-		modified_at: new Date().toISOString(),
-		version: existing.version + 1
-	};
+  const updated: Task = {
+    ...existing,
+    ...data,
+    modified_at: new Date().toISOString(),
+    version: existing.version + 1,
+  };
 
-	// Save locally
-	tasks.update((t) => t.map((item) => (item.id === id ? updated : item)));
-	await db.saveTask(updated);
+  // Save locally
+  tasks.update((t) => t.map((item) => (item.id === id ? updated : item)));
+  await db.saveTask(updated);
 
-	// Queue for sync
-	if (navigator.onLine) {
-		try {
-			const serverUpdated = await apiClient.updateTask(id, {
-				...data,
-				notes: data.notes === null ? undefined : data.notes
-			});
-			// Update with server version
-			tasks.update((t) => t.map((item) => (item.id === id ? serverUpdated : item)));
-			await db.saveTask(serverUpdated);
-			showSuccess('Task updated successfully');
-			return serverUpdated;
-		} catch (error) {
-			console.error('Failed to update task on server:', error);
-			// Add to outbox for later sync
-			await db.addToOutbox('update', id, data);
-			await registerBackgroundSync();
-			showWarning('Task saved offline - will sync when connection restored');
-		}
-	} else {
-		// Add to outbox for later sync
-		await db.addToOutbox('update', id, data);
-		await registerBackgroundSync();
-		showWarning('Working offline - changes will sync when connection restored');
-	}
+  // Queue for sync
+  if (navigator.onLine) {
+    try {
+      const serverUpdated = await apiClient.updateTask(id, {
+        ...data,
+        notes: data.notes === null ? undefined : data.notes,
+        due_date: data.due_date === null ? undefined : data.due_date,
+        due_time: data.due_time === null ? undefined : data.due_time,
+      });
+      // Update with server version
+      tasks.update((t) => t.map((item) => (item.id === id ? serverUpdated : item)));
+      await db.saveTask(serverUpdated);
+      showSuccess("Task updated successfully");
+      return serverUpdated;
+    } catch (error) {
+      console.error("Failed to update task on server:", error);
+      // Add to outbox for later sync
+      await db.addToOutbox("update", id, data);
+      await registerBackgroundSync();
+      showWarning("Task saved offline - will sync when connection restored");
+    }
+  } else {
+    // Add to outbox for later sync
+    await db.addToOutbox("update", id, data);
+    await registerBackgroundSync();
+    showWarning("Working offline - changes will sync when connection restored");
+  }
 
-	return updated;
+  return updated;
 }
 
 /**
  * Delete task (offline-first)
  */
 export async function deleteTask(id: string): Promise<void> {
-	// Delete locally
-	tasks.update((t) => t.filter((item) => item.id !== id));
-	await db.deleteTask(id);
+  // Delete locally
+  tasks.update((t) => t.filter((item) => item.id !== id));
+  await db.deleteTask(id);
 
-	// Queue for sync
-	if (navigator.onLine) {
-		try {
-			await apiClient.deleteTask(id);
-			showSuccess('Task deleted successfully');
-		} catch (error) {
-			console.error('Failed to delete task on server:', error);
-			// Add to outbox for later sync
-			await db.addToOutbox('delete', id);
-			await registerBackgroundSync();
-			showWarning('Task deleted locally - will sync when connection restored');
-		}
-	} else {
-		// Add to outbox for later sync
-		await db.addToOutbox('delete', id);
-		await registerBackgroundSync();
-		showWarning('Working offline - deletion will sync when connection restored');
-	}
+  // Queue for sync
+  if (navigator.onLine) {
+    try {
+      await apiClient.deleteTask(id);
+      showSuccess("Task deleted successfully");
+    } catch (error) {
+      console.error("Failed to delete task on server:", error);
+      // Add to outbox for later sync
+      await db.addToOutbox("delete", id);
+      await registerBackgroundSync();
+      showWarning("Task deleted locally - will sync when connection restored");
+    }
+  } else {
+    // Add to outbox for later sync
+    await db.addToOutbox("delete", id);
+    await registerBackgroundSync();
+    showWarning("Working offline - deletion will sync when connection restored");
+  }
 }
 
 /**
  * Toggle task completion (offline-first)
  */
 export async function toggleTaskComplete(id: string): Promise<void> {
-	const currentTasks = get(tasks);
-	const task = currentTasks.find((t) => t.id === id);
+  const currentTasks = get(tasks);
+  const task = currentTasks.find((t) => t.id === id);
 
-	if (!task) {
-		return;
-	}
+  if (!task) {
+    return;
+  }
 
-	const completed = !task.completed;
-	const completed_at = completed ? new Date().toISOString() : null;
+  const completed = !task.completed;
+  const completed_at = completed ? new Date().toISOString() : null;
 
-	await updateTask(id, { completed, completed_at });
+  await updateTask(id, { completed, completed_at });
 }
 
 /**
  * Register background sync for outbox processing
  */
 async function registerBackgroundSync(): Promise<void> {
-	if ('serviceWorker' in navigator && 'sync' in (ServiceWorkerRegistration.prototype as any)) {
-		try {
-			const registration = await navigator.serviceWorker.ready;
-			await (registration as any).sync.register('haboard-sync');
-			console.log('Background sync registered for outbox processing');
-		} catch (error) {
-			console.warn('Background sync registration failed:', error);
-		}
-	}
+  if ("serviceWorker" in navigator && "sync" in (ServiceWorkerRegistration.prototype as any)) {
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      await (registration as any).sync.register("haboard-sync");
+      console.log("Background sync registered for outbox processing");
+    } catch (error) {
+      console.warn("Background sync registration failed:", error);
+    }
+  }
 }
 
 /**
  * Cleanup
  */
 export function cleanup(): void {
-	window.removeEventListener('online', handleOnline);
-	window.removeEventListener('offline', handleOffline);
+  if (typeof window !== "undefined") {
+    window.removeEventListener("online", handleOnline);
+    window.removeEventListener("offline", handleOffline);
+  }
 
-	if (wsClient) {
-		wsClient.disconnect();
-		wsClient = null;
-	}
+  if (wsClient) {
+    wsClient.disconnect();
+    wsClient = null;
+  }
 }
