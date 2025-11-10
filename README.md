@@ -463,6 +463,7 @@ See [Canvas 4: Phased Implementation Plan](docs/04-phased-implementation-plan.md
 - [**Phased Implementation Plan**](docs/04-phased-implementation-plan.md) ⭐ **For developers**
 
 ### Technical Specs
+- [**Development Environment**](docs/development-environment.md) ⭐ **Setup guide**
 - [**CI/CD Pipeline**](docs/ci-cd-pipeline.md) ⭐ **For contributors**
 - Database Schema Design (Coming Soon)
 - API Reference (OpenAPI) (Coming Soon)
@@ -481,12 +482,16 @@ See [Canvas 4: Phased Implementation Plan](docs/04-phased-implementation-plan.md
 
 ## 🤝 Contributing
 
-> This project is currently in the planning phase. Contributions will be welcome once development begins.
+**Getting Started:**
+1. Set up your development environment: [Development Environment Guide](docs/development-environment.md)
+2. Review the [planning documents](docs/) and [CI/CD pipeline](docs/ci-cd-pipeline.md)
+3. Check out the [Phased Implementation Plan](docs/04-phased-implementation-plan.md)
 
 **How to Contribute:**
-1. Review the [planning documents](docs/)
-2. Open an issue for discussion (bug reports, feature requests, questions)
-3. Submit PRs against the main branch (once development starts)
+1. Open an issue for discussion (bug reports, feature requests, questions)
+2. Fork the repository and create a feature branch
+3. Make your changes following our coding standards
+4. Submit a PR with a clear description
 
 **Development Principles:**
 - Performance first: budgets are hard gates

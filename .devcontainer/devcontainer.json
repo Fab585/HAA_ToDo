@@ -1,0 +1,130 @@
+{
+  "name": "HABoard Development",
+  "dockerFile": "Dockerfile",
+  "context": "..",
+
+  // Set environment variables
+  "containerEnv": {
+    "TZ": "UTC",
+    "PYTHONUNBUFFERED": "1"
+  },
+
+  // Configure tool-specific properties
+  "customizations": {
+    "vscode": {
+      // VS Code extensions to install
+      "extensions": [
+        // Python
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+
+        // Frontend
+        "svelte.svelte-vscode",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+
+        // Git & GitHub
+        "GitHub.copilot",
+        "GitHub.copilot-chat",
+        "eamodio.gitlens",
+
+        // Testing
+        "hbenl.vscode-test-explorer",
+
+        // General
+        "editorconfig.editorconfig",
+        "streetsidesoftware.code-spell-checker",
+        "usernamehw.errorlens",
+        "wayou.vscode-todo-highlight"
+      ],
+
+      // VS Code settings
+      "settings": {
+        // Python
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.linting.enabled": true,
+        "python.linting.pylintEnabled": false,
+        "python.linting.ruffEnabled": true,
+        "python.formatting.provider": "black",
+        "python.testing.pytestEnabled": true,
+        "python.testing.unittestEnabled": false,
+
+        // Editor
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+          "source.fixAll.eslint": "explicit",
+          "source.organizeImports": "explicit"
+        },
+        "editor.rulers": [100],
+
+        // Files
+        "files.exclude": {
+          "**/__pycache__": true,
+          "**/.pytest_cache": true,
+          "**/.mypy_cache": true,
+          "**/.ruff_cache": true,
+          "**/node_modules": true,
+          "**/.svelte-kit": true
+        },
+
+        // Prettier
+        "[javascript]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[typescript]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[svelte]": {
+          "editor.defaultFormatter": "svelte.svelte-vscode"
+        },
+        "[json]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+
+        // Python
+        "[python]": {
+          "editor.defaultFormatter": "ms-python.black-formatter",
+          "editor.formatOnSave": true
+        }
+      }
+    }
+  },
+
+  // Forward ports for development
+  "forwardPorts": [
+    8123,  // Home Assistant
+    5173   // Vite dev server
+  ],
+
+  // Port labels
+  "portsAttributes": {
+    "8123": {
+      "label": "Home Assistant",
+      "onAutoForward": "notify"
+    },
+    "5173": {
+      "label": "Frontend Dev Server",
+      "onAutoForward": "notify"
+    }
+  },
+
+  // Install dependencies on container creation
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+
+  // Use 'forwardPorts' to make a list of ports inside the container available locally
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    },
+    "ghcr.io/devcontainers/features/git:1": {}
+  },
+
+  // Mount the local git config
+  "mounts": [
+    "source=${localEnv:HOME}/.gitconfig,target=/root/.gitconfig,type=bind,consistency=cached"
+  ],
+
+  // Run as root (required for Home Assistant)
+  "remoteUser": "root"
+}

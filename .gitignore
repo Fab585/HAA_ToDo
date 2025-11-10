@@ -37,7 +37,9 @@ build/
 *.sql.backup
 
 # IDE
-.vscode/
+# Include .vscode/ settings for team consistency, but ignore personal workspace files
+!.vscode/
+.vscode/*.code-workspace
 .idea/
 *.swp
 *.swo
