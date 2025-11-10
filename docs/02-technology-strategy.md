@@ -280,7 +280,202 @@ This is the **definitive tech plan** for the HA‑integrated to‑do app, mergin
 
 ---
 
-## 18) Tickets (Ready‑to‑Make)
+## 18) Security by Design
+
+**Philosophy:** Security must be designed in from Day 1, not audited in at Week 47-48.
+
+### Threat Model
+
+**What we're protecting:**
+- User task data (private, sensitive)
+- User credentials (HA access tokens)
+- System integrity (prevent unauthorized actions)
+
+**Threat actors:**
+- **Malicious users:** On same HA instance (multi-user households)
+- **Network attackers:** On local network (ARP spoofing, MITM)
+- **Web attackers:** Cross-site attacks (XSS, CSRF)
+- **Supply chain:** Compromised dependencies
+
+**Out of scope (HA's responsibility):**
+- TLS certificate management (HA handles HTTPS)
+- User authentication (HA provides tokens)
+- Network security (firewall, VPN)
+
+### Authentication & Authorization
+
+**MVP:**
+- **Authentication:** Use HA's existing auth system
+  - Frontend receives HA long-lived access token from localStorage
+  - API validates token via HA's `homeassistant.auth` module
+  - WebSocket authenticates via token in connection message
+- **Authorization:** Single-user model (no per-board permissions yet)
+  - All authenticated users can access all tasks
+  - Defer to Beta: board-level permissions
+
+**Beta:**
+- **Authorization:** Per-board access control
+  - Board members only see their boards
+  - Check board membership on every API call
+  - WebSocket subscriptions filtered by board membership
+
+**V1.0:**
+- **Authorization:** Role-based access control (RBAC)
+  - Viewer, Commenter, Editor roles per board
+  - API enforces permissions: `if user_role < required_role: raise Forbidden`
+
+### Input Validation & Sanitization
+
+**All inputs MUST be validated:**
+
+| Input | Validation | Sanitization |
+|-------|-----------|--------------|
+| **Task title** | Max 500 chars; no null bytes | HTML escape (prevent XSS) |
+| **Task notes** | Max 10k chars; markdown only | DOMPurify on frontend; bleach on backend |
+| **Due date** | ISO 8601 format; <= 10 years future | Parse with datetime.fromisoformat |
+| **Tag name** | Max 50 chars; alphanumeric + spaces | Strip HTML; lowercase |
+| **Search query** | Max 200 chars | FTS5 handles SQL injection; escape special chars |
+
+**Implementation:**
+- **Backend:** Pydantic models with validators
+- **Frontend:** Zod schemas + DOMPurify for markdown rendering
+
+### SQL Injection Prevention
+
+**Strategy:** Parameterized queries ONLY
+
+```python
+# ✅ GOOD: Parameterized query
+cursor.execute(
+    "SELECT * FROM tasks WHERE id = ?",
+    (task_id,)
+)
+
+# ❌ BAD: String interpolation (NEVER DO THIS)
+cursor.execute(f"SELECT * FROM tasks WHERE id = '{task_id}'")
+```
+
+**Enforcement:**
+- CI: Run `bandit` (Python security linter)
+- Code review: Check all SQL queries use parameters
+- FTS5: Use bind parameters for user input
+
+### XSS Prevention
+
+**Strategy:** Output encoding + Content Security Policy
+
+**Output Encoding:**
+- **Frontend:** DOMPurify for markdown rendering
+- **React-style:** Svelte auto-escapes by default (`{title}`)
+- **Unsafe HTML:** Only via `{@html}` with sanitized input
+
+**Content Security Policy (CSP):**
+```http
+Content-Security-Policy:
+  default-src 'self';
+  script-src 'self' 'wasm-unsafe-eval';
+  style-src 'self' 'unsafe-inline';
+  img-src 'self' data: https:;
+  connect-src 'self' ws: wss:;
+  font-src 'self';
+  object-src 'none';
+  base-uri 'self';
+  form-action 'self';
+  frame-ancestors 'none';
+```
+
+**Implementation:**
+- HA integration sets CSP headers on `/api/haboard/frontend/*`
+- CI: Test CSP with https://csp-evaluator.withgoogle.com
+
+### CSRF Protection
+
+**Strategy:** SameSite cookies + token validation
+
+**For State-Changing Requests:**
+- HA access token in `Authorization: Bearer <token>` header
+- Validates on server side
+- SameSite=Strict cookie policy (HA default)
+
+**For WebSocket:**
+- Token in connection message
+- Server validates before accepting subscription
+
+### Rate Limiting
+
+**Strategy:** Per-user rate limits to prevent abuse
+
+| Endpoint | Limit | Window | Reason |
+|----------|-------|--------|--------|
+| `POST /tasks` | 100 | 1 minute | Prevent spam |
+| `POST /tasks/search` | 60 | 1 minute | Prevent DoS via FTS |
+| `POST /tags` | 20 | 1 minute | Tags created rarely |
+| `WS /ws` | 1 connection | per device | Prevent resource exhaustion |
+
+**Implementation:**
+- Python: `slowapi` or custom decorator with Redis/in-memory cache
+- Return `429 Too Many Requests` with `Retry-After` header
+
+### Dependency Security
+
+**Strategy:** Automated scanning + manual review
+
+**CI Checks:**
+- **Python:** `safety check` (checks requirements.txt against CVE database)
+- **JavaScript:** `npm audit` (checks package-lock.json)
+- **GitHub:** Dependabot alerts enabled
+- **Fail build:** If any HIGH or CRITICAL vulnerabilities
+
+**Manual Review:**
+- Before adding new dependency, check:
+  - Last updated date (< 1 year old preferred)
+  - GitHub stars (> 500 for critical deps)
+  - Known vulnerabilities (search "npm <package> vulnerability")
+  - License compatibility (MIT, Apache 2.0, BSD)
+
+### Data Protection
+
+**At Rest:**
+- SQLite file: Protected by HA's file permissions (only `homeassistant` user)
+- No encryption at rest (HA's responsibility if needed)
+
+**In Transit:**
+- HTTPS: HA handles TLS termination
+- WebSocket: WSS (secure WebSocket) on production
+- Local dev: WS acceptable (localhost only)
+
+**Logging:**
+- NEVER log tokens, passwords, or sensitive data
+- Log task IDs, not task content
+- Use `structlog` with scrubber for PII
+
+### Security Checklist (Week 47-48)
+
+**OWASP Top 10 Review:**
+- [ ] A01: Broken Access Control → Board-level RBAC
+- [ ] A02: Cryptographic Failures → HA handles TLS
+- [ ] A03: Injection → Parameterized queries + input validation
+- [ ] A04: Insecure Design → Threat model documented
+- [ ] A05: Security Misconfiguration → CSP + rate limiting
+- [ ] A06: Vulnerable Components → CI scanning
+- [ ] A07: Authentication Failures → HA auth system
+- [ ] A08: Data Integrity Failures → Vector clocks + signatures
+- [ ] A09: Logging Failures → Structlog + PII scrubbing
+- [ ] A10: SSRF → No external fetches in MVP
+
+**Penetration Testing:**
+- [ ] Run OWASP ZAP automated scan
+- [ ] Manual testing: XSS, CSRF, SQL injection attempts
+- [ ] Test rate limiting with load generator
+- [ ] Verify CSP with browser dev tools
+
+**Security Audit (External):**
+- [ ] If budget allows: Hire security firm for 1-week audit
+- [ ] If not: Community review via HA forums + bug bounty
+
+---
+
+## 19) Tickets (Ready‑to‑Make)
 
 * **FE‑01** Svelte Query + WS invalidation; stale resolves ≤500 ms post‑event.
 * **FE‑02** Swipe triage gestures + haptics; 5 s undo toast.
@@ -295,7 +490,7 @@ This is the **definitive tech plan** for the HA‑integrated to‑do app, mergin
 
 ---
 
-## 19) Summary: Optimised Stack (At‑a‑glance)
+## 20) Summary: Optimised Stack (At‑a‑glance)
 
 | Layer              | Final Choice                                      | Why                                              |
 | ------------------ | ------------------------------------------------- | ------------------------------------------------ |

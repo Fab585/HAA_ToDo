@@ -91,6 +91,317 @@ Each phase delivers **real user value** and validates assumptions before buildin
 
 ---
 
+## 🛠️ Week 0: Infrastructure & Distribution Setup (CRITICAL)
+
+**Timeline:** 3-5 days before Week 1
+**Goal:** Set up development infrastructure and distribution strategy
+
+### Repository Structure
+
+```
+haboard/
+├── custom_components/
+│   └── haboard/                    # HA integration (Python)
+│       ├── __init__.py             # Integration entry point
+│       ├── manifest.json           # HA integration manifest
+│       ├── config_flow.py          # Setup UI
+│       ├── api.py                  # REST API (aiohttp views)
+│       ├── websocket.py            # WebSocket handler
+│       ├── database.py             # SQLite wrapper
+│       └── frontend/               # PWA static files (served by aiohttp)
+│           ├── index.html
+│           ├── assets/
+│           └── manifest.webmanifest
+├── frontend/                       # SvelteKit source code
+│   ├── src/
+│   ├── svelte.config.js
+│   └── package.json
+├── hacs.json                       # HACS metadata
+├── .github/
+│   └── workflows/
+│       ├── ci.yml                  # Lint, test, build
+│       └── release.yml             # Automated releases
+├── README.md
+└── LICENSE
+```
+
+### Week 0 Checklist
+
+**Day 1: Repository & HACS Setup**
+- [ ] Create GitHub repository: `haboard`
+- [ ] Initialize monorepo structure (custom_components + frontend)
+- [ ] Create `hacs.json`:
+```json
+{
+  "name": "HABoard",
+  "render_readme": true,
+  "domains": ["todo", "calendar"],
+  "homeassistant": "2024.1.0"
+}
+```
+- [ ] Create `manifest.json` in `custom_components/haboard/`:
+```json
+{
+  "domain": "haboard",
+  "name": "HABoard",
+  "version": "0.0.1",
+  "documentation": "https://github.com/yourusername/haboard",
+  "issue_tracker": "https://github.com/yourusername/haboard/issues",
+  "codeowners": ["@yourusername"],
+  "requirements": [],
+  "dependencies": [],
+  "iot_class": "local_push"
+}
+```
+
+**Day 2: CI/CD Pipeline**
+- [ ] GitHub Actions workflow: Lint (Python: ruff, black; JS: eslint, prettier)
+- [ ] GitHub Actions workflow: Test (Python: pytest; JS: vitest)
+- [ ] GitHub Actions workflow: Build (SvelteKit build to custom_components/haboard/frontend/)
+- [ ] Bundle size enforcement: fail if >150KB gzipped
+- [ ] Lighthouse CI: fail if PWA score <90
+
+**Day 3: Development Environment**
+- [ ] `.devcontainer` for VS Code (optional but recommended)
+- [ ] `requirements.txt` for Python deps
+- [ ] `requirements-dev.txt` for dev/test deps (pytest, ruff, black)
+- [ ] `package.json` scripts: dev, build, test, lint
+- [ ] Git hooks: pre-commit (lint + test)
+- [ ] README: Development setup instructions
+
+**Day 4: Database Schema (Initial)**
+- [ ] Document initial SQLite schema (see Canvas 5 section below)
+- [ ] Tables: tasks, tags, task_tags
+- [ ] Indexes: idx_tasks_due_date, idx_tasks_completed
+- [ ] FTS5 virtual table for search
+
+**Day 5: HA Integration Skeleton**
+- [ ] `__init__.py`: Integration setup, async_setup_entry
+- [ ] `config_flow.py`: Basic configuration UI
+- [ ] Test: Install on your dev HA instance via custom_components
+- [ ] Verify: Integration shows up in Settings → Integrations
+
+### Distribution Strategy: HACS-First
+
+**Why HACS:**
+- ✅ Works on all HA installation types (Supervised, Container, Core, HAOS)
+- ✅ Git-based: Easy development workflow (git push → HACS update)
+- ✅ Single repo: Integration + frontend together
+- ✅ Community standard: 90% of custom integrations use HACS
+- ✅ Your dev setup already supports it
+
+**How it works:**
+1. HACS clones your repo to `custom_components/haboard/`
+2. User restarts HA
+3. Integration starts, registers aiohttp view: `/api/haboard/frontend/*`
+4. User navigates to `http://homeassistant.local:8123/api/haboard/frontend/`
+5. Integration serves your PWA (SvelteKit build output)
+6. PWA registers service worker, goes offline-capable
+7. PWA talks to REST API at `/api/haboard/tasks`
+
+**Development Workflow:**
+```bash
+# Terminal 1: Frontend dev server
+cd frontend
+npm run dev  # Hot reload on localhost:5173
+
+# Terminal 2: HA integration dev
+# Edit custom_components/haboard/*.py
+# HA auto-reloads integration on file change
+
+# When ready to test production build:
+cd frontend
+npm run build  # Outputs to custom_components/haboard/frontend/
+# Restart HA integration
+```
+
+**Publishing:**
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+# HACS auto-detects new release
+# Users click "Update" in HACS
+```
+
+**Optional: HA Addon (V1.0+)**
+- Can add later if users request it (survey after Beta)
+- For broader reach to non-HACS users
+- Effort: ~1 week in V1.0 phase
+
+---
+
+## 🗄️ Canvas 5: Database Schema & API Spec (Initial)
+
+**Note:** This is the initial schema for MVP. Will evolve in Beta/V1.0.
+
+### SQLite Schema (MVP)
+
+```sql
+-- Enable WAL mode for concurrent reads
+PRAGMA journal_mode=WAL;
+
+-- Tasks table
+CREATE TABLE tasks (
+    id TEXT PRIMARY KEY,                    -- UUID v7
+    title TEXT NOT NULL,
+    notes TEXT,
+    due_date TEXT,                          -- ISO 8601 (YYYY-MM-DD)
+    due_time TEXT,                          -- ISO 8601 (HH:MM:SS)
+    priority INTEGER DEFAULT 0,             -- 0=none, 1=low, 2=medium, 3=high
+    completed BOOLEAN DEFAULT 0,
+    completed_at TEXT,                      -- ISO 8601
+    modified_at TEXT NOT NULL,              -- ISO 8601
+    device_id TEXT NOT NULL,                -- Device that last modified
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tags table
+CREATE TABLE tags (
+    id TEXT PRIMARY KEY,
+    name TEXT UNIQUE NOT NULL,
+    color TEXT DEFAULT '#3b82f6'           -- Tailwind blue-500
+);
+
+-- Task-Tag association (many-to-many)
+CREATE TABLE task_tags (
+    task_id TEXT NOT NULL,
+    tag_id TEXT NOT NULL,
+    PRIMARY KEY (task_id, tag_id),
+    FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+    FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+);
+
+-- Indexes for performance
+CREATE INDEX idx_tasks_due_date ON tasks(due_date) WHERE completed = 0;
+CREATE INDEX idx_tasks_completed ON tasks(completed);
+CREATE INDEX idx_tasks_modified_at ON tasks(modified_at);
+
+-- Full-text search (FTS5)
+CREATE VIRTUAL TABLE tasks_fts USING fts5(
+    title,
+    notes,
+    content='tasks',
+    content_rowid='rowid'
+);
+
+-- Triggers to keep FTS in sync
+CREATE TRIGGER tasks_ai AFTER INSERT ON tasks BEGIN
+    INSERT INTO tasks_fts(rowid, title, notes)
+    VALUES (new.rowid, new.title, new.notes);
+END;
+
+CREATE TRIGGER tasks_ad AFTER DELETE ON tasks BEGIN
+    DELETE FROM tasks_fts WHERE rowid = old.rowid;
+END;
+
+CREATE TRIGGER tasks_au AFTER UPDATE ON tasks BEGIN
+    UPDATE tasks_fts SET title = new.title, notes = new.notes
+    WHERE rowid = new.rowid;
+END;
+```
+
+### REST API Endpoints (MVP)
+
+**Base URL:** `/api/haboard`
+
+| Method | Endpoint | Description | Request | Response |
+|--------|----------|-------------|---------|----------|
+| `GET` | `/tasks` | List all tasks | Query: `completed`, `since` | `Task[]` |
+| `POST` | `/tasks` | Create task | `CreateTaskRequest` | `Task` |
+| `GET` | `/tasks/{id}` | Get task | - | `Task` |
+| `PUT` | `/tasks/{id}` | Update task | `UpdateTaskRequest` | `Task` |
+| `DELETE` | `/tasks/{id}` | Delete task | - | `204 No Content` |
+| `POST` | `/tasks/{id}/complete` | Mark complete | - | `Task` |
+| `POST` | `/tasks/search` | Full-text search | `SearchRequest` | `Task[]` |
+| `GET` | `/tags` | List all tags | - | `Tag[]` |
+| `POST` | `/tags` | Create tag | `CreateTagRequest` | `Tag` |
+
+**Types (TypeScript):**
+```typescript
+interface Task {
+  id: string;
+  title: string;
+  notes: string | null;
+  due_date: string | null;      // ISO 8601 date
+  due_time: string | null;      // HH:MM:SS
+  priority: 0 | 1 | 2 | 3;
+  completed: boolean;
+  completed_at: string | null;
+  modified_at: string;
+  device_id: string;
+  created_at: string;
+  tags: Tag[];
+}
+
+interface Tag {
+  id: string;
+  name: string;
+  color: string;
+}
+
+interface CreateTaskRequest {
+  title: string;
+  notes?: string;
+  due_date?: string;
+  due_time?: string;
+  priority?: 0 | 1 | 2 | 3;
+  tag_ids?: string[];
+}
+
+interface UpdateTaskRequest {
+  title?: string;
+  notes?: string;
+  due_date?: string;
+  due_time?: string;
+  priority?: 0 | 1 | 2 | 3;
+  tag_ids?: string[];
+}
+
+interface SearchRequest {
+  query: string;
+  limit?: number;
+}
+```
+
+### WebSocket Protocol (MVP)
+
+**Connect:** `ws://homeassistant.local:8123/api/haboard/ws`
+
+**Messages:**
+
+```typescript
+// Client → Server: Subscribe to updates
+{
+  type: "subscribe",
+  device_id: "abc123"
+}
+
+// Server → Client: Task created/updated/deleted
+{
+  type: "task_updated",
+  task: Task,
+  device_id: "abc123"  // Which device made the change
+}
+
+{
+  type: "task_deleted",
+  task_id: "xyz789",
+  device_id: "abc123"
+}
+
+// Client → Server: Heartbeat (every 30s)
+{
+  type: "ping"
+}
+
+// Server → Client: Heartbeat response
+{
+  type: "pong"
+}
+```
+
+---
+
 ## 🚀 MVP (v0.1) — "Prove the Concept"
 
 **Timeline:** 6-8 weeks *(reduced from 8-12 weeks via scope refinement)*
@@ -335,15 +646,31 @@ These critical flows must work flawlessly:
 ### Technical Milestones (MVP)
 
 **Week 1-2: Validation Spikes + Foundation**
+
+**Prerequisites:**
+- ✅ Week 0 completed (infrastructure, HACS setup, schema documented)
+
+**Validation Spikes (Run these first):**
 - [ ] **Validation Spike 1:** Offline sync POC (IndexedDB + WebSocket)
+  - Test: 2 devices, add task offline, go online, sync in <2s
+  - Success: 10/10 syncs work; latency <2s
 - [ ] **Validation Spike 2:** NLP parsing quality (50 test phrases with chrono)
+  - Test phrases: "tomorrow 6pm", "next Tuesday", "in 2 hours", "every Friday"
+  - Success: >80% fully correct; <10% complete failures
 - [ ] **Validation Spike 3:** Bundle size check (SvelteKit minimal build)
+  - Build minimal app: SvelteKit + TailwindCSS + Tanstack Query
+  - Success: <100 KB gzipped (leaves margin for features)
 - [ ] **Validation Spike 4:** SQLite FTS5 performance (1k tasks, <200ms queries)
-- [ ] **Gate:** All spikes must pass before continuing
-- [ ] Repo setup (monorepo: `/custom_components/haboard`, `/frontend`)
-- [ ] CI/CD pipeline (GitHub Actions: lint, test, build, bundle size enforcement)
-- [ ] Database schema (SQLite with WAL mode + FTS5 for tasks table)
-- [ ] HA integration skeleton (manifest, config_flow, entities)
+  - Load 1000 sample tasks with FTS5 index
+  - Query: search for "milk"
+  - Success: p95 <200ms on Raspberry Pi 4
+- [ ] **Gate:** All spikes must pass before continuing to Week 3-4
+
+**If Spikes Pass:**
+- [ ] Install integration on your dev HA instance via HACS (custom repo)
+- [ ] Verify: Integration appears in Settings → Integrations
+- [ ] Verify: `/api/haboard/frontend/` serves static page
+- [ ] Document learnings from spikes (what worked, what didn't)
 
 **Week 3-4: Backend + Sync**
 - [ ] REST API (aiohttp views in HA integration)

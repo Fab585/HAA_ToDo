@@ -231,9 +231,9 @@ Before building, we run 2-week time-boxed experiments:
 |-------|----------|----------------------|
 | Validation Spikes | 2 weeks | 1-2 weeks |
 | MVP Development | **6-8 weeks** *(reduced from 10-12)* | 6-8 weeks |
-| Beta Development | +12 weeks | +10-15 weeks |
-| V1.0 Development | +16 weeks | +15-20 weeks |
-| **Total to V1.0** | **~36-38 weeks** | **~40-55 weeks** |
+| Beta Development | +14 weeks | +10-15 weeks |
+| V1.0 Development | +32 weeks | +15-20 weeks |
+| **Total to V1.0** | **~56 weeks (~13 months)** | **~40-55 weeks** |
 
 ### Team Composition (Recommended)
 
