@@ -465,7 +465,7 @@ See [Canvas 4: Phased Implementation Plan](docs/04-phased-implementation-plan.md
 ### Technical Specs
 - [**Development Environment**](docs/development-environment.md) ⭐ **Setup guide**
 - [**CI/CD Pipeline**](docs/ci-cd-pipeline.md) ⭐ **For contributors**
-- Database Schema Design (Coming Soon)
+- [**Database Schema**](docs/database-schema.md) ⭐ **Data model & API**
 - API Reference (OpenAPI) (Coming Soon)
 - WebSocket Protocol (Coming Soon)
 - Sync & Conflict Resolution (Coming Soon)
