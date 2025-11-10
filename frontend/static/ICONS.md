@@ -22,6 +22,7 @@ This directory needs the following icon files for the PWA to work properly:
 You can use the following tools to generate PNG icons from the SVG:
 
 ### Using ImageMagick (command line)
+
 ```bash
 # Generate 192x192 icon
 convert icon.svg -resize 192x192 icon-192.png
@@ -34,10 +35,12 @@ convert icon.svg -resize 48x48 favicon.png
 ```
 
 ### Using Online Tools
+
 - https://realfavicongenerator.net/ - Comprehensive favicon generator
 - https://www.pwabuilder.com/ - PWA icon and manifest generator
 
 ### Using npm packages
+
 ```bash
 npm install -g pwa-asset-generator
 pwa-asset-generator icon.svg ./static --icon-only --background "#3b82f6"
