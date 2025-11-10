@@ -25,13 +25,31 @@ HABoard is a next-generation task management system designed for individuals and
 
 ## 📚 Documentation
 
-This repository contains comprehensive planning documents that define the product vision, user experience, and technical architecture:
+This repository contains comprehensive planning documents that define the product vision, user experience, and technical architecture.
+
+### 🎯 Start Here
+👉 **[Executive Summary](docs/00-executive-summary.md)** — High-level overview, strategy, and roadmap (10 min read)
+
+### 📖 Complete Planning Suite
 
 | Document | Description | Status |
 |----------|-------------|--------|
+| **[Canvas 0: Executive Summary](docs/00-executive-summary.md)** | Project overview, strategy, metrics, and getting started guide | ✅ Complete |
 | **[Canvas 1: User Stories & Acceptance Criteria](docs/01-user-stories-acceptance-criteria.md)** | 30 user stories with detailed acceptance criteria covering all features | ✅ Complete |
 | **[Canvas 2: Technology Strategy](docs/02-technology-strategy.md)** | Definitive tech stack, architecture, database design, sync strategy, and implementation plan | ✅ Complete |
 | **[Canvas 3: Review & Analysis](docs/03-review-and-analysis.md)** | Comprehensive review of story-to-tech alignment, gaps, recommendations, and risk assessment | ✅ Complete |
+| **[Canvas 4: Phased Implementation Plan](docs/04-phased-implementation-plan.md)** | 🚀 **MVP-first approach** with incremental delivery from v0.1 to v2.0+ | ✅ Complete |
+
+### 🎯 Implementation Strategy
+
+We're taking an **incremental delivery approach** that ships value early while building toward the full vision:
+
+- **MVP (v0.1)** — 2-3 months: Core task management + offline sync + basic HA integration
+- **Beta (v0.5)** — 4-6 months: + Kiosk mode + voice control + presence awareness
+- **V1.0** — 9-12 months: + Full collaboration + calendar + smart suggestions
+- **V2.0+** — 12+ months: + ML features + multi-home sync + integrations
+
+See **[Canvas 4: Phased Implementation Plan](docs/04-phased-implementation-plan.md)** for complete details.
 
 ---
 
@@ -141,65 +159,75 @@ This repository contains comprehensive planning documents that define the produc
 
 ## 🚀 Development Roadmap
 
-### Phase 1: Foundation (Slice 1)
-**Goal:** Core CRUD + Sync
+We're following an **incremental delivery strategy** that ships value at each milestone. See [Canvas 4: Phased Implementation Plan](docs/04-phased-implementation-plan.md) for complete details.
 
-- [ ] PostgreSQL schema with vector clocks
-- [ ] HA custom integration skeleton (entities, services)
-- [ ] SvelteKit PWA with IndexedDB outbox
-- [ ] WebSocket real-time sync
-- [ ] Offline conflict resolution
+### 🎯 MVP (v0.1) — "Prove the Concept"
+**Timeline:** 2-3 months | **Users:** 5-10 pilot testers
 
-**Deliverable:** Add/edit/complete tasks; sync across 2 devices offline/online
+**Core Features:**
+- ✅ Quick add with natural language parsing (chrono)
+- ✅ Swipe to complete/snooze with haptics
+- ✅ Offline-first PWA (IndexedDB + Service Worker)
+- ✅ Real-time sync with last-write-wins conflict resolution
+- ✅ Basic HA integration (todo entity + services)
+- ✅ Web Push notifications with action buttons
+- ✅ Mobile-optimized UI with Today/Overdue/All filters
 
----
-
-### Phase 2: Kiosk & Embedding (Slice 2)
-**Goal:** Shared display experience
-
-- [ ] Lit custom card for Lovelace
-- [ ] Kiosk route with large targets
-- [ ] Ambient idle mode
-- [ ] Today/Overdue/Mine filters
-
-**Deliverable:** Tablet kiosk view; embedded HA dashboard card
+**What We'll Learn:**
+- Is the concept useful enough to replace existing apps?
+- Is NLP parsing accurate enough?
+- Does offline sync work reliably?
 
 ---
 
-### Phase 3: Planning & Calendar (Slice 3)
-**Goal:** Drag-and-drop agenda
+### 🎨 Beta (v0.5) — "Daily Driver Quality"
+**Timeline:** 4-6 months | **Users:** 20-50 beta testers
 
-- [ ] Calendar integration (mirror due tasks)
-- [ ] Drag-to-day scheduling with haptics
-- [ ] Time blocking (`block.create` service)
-- [ ] Full-text search (PostgreSQL FTS)
+**Adds:**
+- ✅ Kiosk mode for tablet displays with ambient idle mode
+- ✅ Lit custom card for Lovelace dashboards
+- ✅ Voice control via Home Assistant Assist
+- ✅ Basic presence-aware reminders
+- ✅ Shared boards with real-time collaboration
+- ✅ Smart notification digests (morning/evening)
+- ✅ Improved conflict resolution (per-field merge)
 
-**Deliverable:** Weekly planning workflow; unified task+event calendar
-
----
-
-### Phase 4: Context & Voice (Slice 4)
-**Goal:** Smart home awareness
-
-- [ ] Presence fusion algorithm (GPS + Wi-Fi + BLE)
-- [ ] Assist intents (AddTodo, ListToday, CompleteTodo)
-- [ ] Zone-based notifications
-- [ ] Weather/daylight awareness
-- [ ] Sensor-triggered task creation
-
-**Deliverable:** Voice control; context-aware reminders
+**What We'll Learn:**
+- Do families actually use kiosk mode?
+- Is voice control reliable enough?
+- Does presence awareness add value or annoy?
 
 ---
 
-### Phase 5: Collaboration & Audit (Slice 5)
-**Goal:** Family features & security
+### 🏆 V1.0 — "Feature Complete"
+**Timeline:** 9-12 months | **Users:** Public release
 
-- [ ] Per-board roles (HA user mapping)
-- [ ] Activity log with filters
-- [ ] CSV/JSON export
-- [ ] Private tasks
+**Adds:**
+- ✅ Calendar integration with time blocking
+- ✅ Smart suggestions (rule-based: weather, energy, presence)
+- ✅ Sensor-triggered tasks (washer done, low battery, etc.)
+- ✅ Zone-based notifications (grocery store → grocery list)
+- ✅ Weekly planning ritual
+- ✅ Per-board roles and permissions
+- ✅ Activity log with audit trail
+- ✅ Full accessibility (WCAG AAA, screen readers, child mode)
+- ✅ Internationalization (multiple locales, RTL, timezones)
 
-**Deliverable:** Full family collaboration with audit trail
+**What We'll Learn:**
+- Which advanced features get used most?
+- Is the app stable enough for 500+ users?
+
+---
+
+### 🚀 V2.0+ — "Innovation & Polish"
+**Timeline:** 12+ months
+
+**Potential Features (prioritize based on V1.0 feedback):**
+- ML-powered smart scheduling and duration prediction
+- Multi-home sync for families with multiple properties
+- Integrations (Todoist/Things import, calendar sync)
+- Analytics & productivity insights
+- Platform expansion (desktop apps, browser extensions, wearables)
 
 ---
 
@@ -289,9 +317,11 @@ npm run dev
 ## 📖 Documentation Index
 
 ### Planning Documents
+- [**Executive Summary**](docs/00-executive-summary.md) ⭐ **Start here**
 - [User Stories & Acceptance Criteria](docs/01-user-stories-acceptance-criteria.md)
 - [Technology Strategy & Architecture](docs/02-technology-strategy.md)
 - [Review & Analysis](docs/03-review-and-analysis.md)
+- [**Phased Implementation Plan**](docs/04-phased-implementation-plan.md) ⭐ **For developers**
 
 ### Technical Specs (Coming Soon)
 - Database Schema Design
@@ -329,20 +359,33 @@ npm run dev
 ## 📅 Project Status
 
 **Current Phase:** Planning & Documentation ✅
-**Next Phase:** Validation Spikes → Slice 1 Development
+**Next Phase:** Validation Spikes → MVP Development (v0.1)
+**Strategy:** Incremental delivery with continuous user feedback
 
 ### Completed Milestones
 - ✅ User stories & acceptance criteria (30 stories)
 - ✅ Technology stack selection & justification
-- ✅ Architecture design (2-layer, PostgreSQL, sync strategy)
+- ✅ Architecture design (2-layer, simplified sync)
 - ✅ Comprehensive review & gap analysis
+- ✅ **Phased implementation plan (MVP → Beta → V1.0 → V2.0+)**
 
-### Upcoming Milestones
-- [ ] Repository setup (CI, linting, testing framework)
-- [ ] Validation Spikes 1-4
-- [ ] Slice 1: Core CRUD + Sync (4 weeks estimated)
-- [ ] Slice 2: Kiosk & Card (2 weeks estimated)
-- [ ] Alpha release (internal testing)
+### Immediate Next Steps (Weeks 1-2)
+- [ ] Run validation spikes (offline sync, NLP parsing, bundle size, FTS performance)
+- [ ] Repository infrastructure setup (CI/CD, linting, testing)
+- [ ] Recruit 5-10 pilot testers
+- [ ] Finalize MVP scope with stakeholders
+
+### MVP Roadmap (Weeks 3-12)
+- [ ] Database schema + HA integration skeleton
+- [ ] REST API + WebSocket sync
+- [ ] SvelteKit PWA with offline support
+- [ ] Core features (quick add, swipe gestures, search)
+- [ ] Deploy to pilot users
+
+### Long-Term Milestones
+- [ ] Beta (v0.5) — 4-6 months: +Kiosk +Voice +Presence
+- [ ] V1.0 — 9-12 months: +Calendar +Smart suggestions +Full collaboration
+- [ ] Public release — Month 13
 
 ---
 
