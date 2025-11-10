@@ -13,7 +13,7 @@ This is the **definitive tech plan** for the HA‑integrated to‑do app, mergin
 **Key shifts vs. earlier draft:**
 
 1. **Simplified architecture (2‑layer):** App talks **directly to the HA custom integration** (REST + WS). The optional FastAPI add‑on is deferred until multi‑home/cloud sync.
-2. **Database:** **PostgreSQL** as the primary datastore for concurrency & LISTEN/NOTIFY. SQLite remains supported as a fallback, but not the default.
+2. **Database:** **SQLite** as the primary datastore for MVP/Beta (simplicity, zero setup). PostgreSQL available as optional upgrade for V1.0+ (LISTEN/NOTIFY, advanced concurrency).
 3. **Offline & conflict safety:** Vector clocks + per‑field merge strategies; CRDT/line‑merge for notes; tombstones for tag removals.
 4. **Notifications:** **Web Push** as primary channel with **HA Companion** fallback; **local scheduling** in Service Worker.
 5. **Performance & observability:** Strict budgets in CI, four validation spikes, and full metrics/tracing.
@@ -50,19 +50,44 @@ This is the **definitive tech plan** for the HA‑integrated to‑do app, mergin
 
 ## 3) Data Layer & Database
 
-### 3.1 Primary: PostgreSQL
+**STRATEGY CHANGE:** SQLite is now the **primary database** for MVP and Beta.
 
-* **Why:** MVCC concurrency, **LISTEN/NOTIFY** for sub‑200 ms realtime fan‑out, robust FTS, JSON, and migration tooling.
-* **Config (home‑scale):** `max_connections=20`, `shared_buffers=128MB`, `work_mem=4MB`.
+### 3.1 PRIMARY (MVP → Beta): SQLite 3.35+
+
+* **Why SQLite First:**
+  - **Simplicity:** Zero setup; ships with HA; no external dependencies
+  - **Performance:** Fast enough for home use (< 10 devices, < 10k tasks)
+  - **Reliability:** Battle-tested; WAL mode handles concurrent readers + single writer
+  - **FTS5:** Built-in full-text search (good enough for MVP)
+  - **Lower barrier:** Most HA users on Raspberry Pi; PostgreSQL adds complexity
+
+* **Configuration:**
+  - **WAL mode** (`PRAGMA journal_mode=WAL`) for concurrent reads during writes
+  - **FTS5 virtual table** for full-text search on `title`, `notes`, `tags`
+  - **Proper indexes:** `idx_tasks_due_date`, `idx_tasks_board_id`, `idx_tasks_completed`
+  - **Connection pooling:** Single writer connection + multiple reader connections
+
+* **Performance Targets:**
+  - Search (FTS5): < 200ms on 1k tasks
+  - Sync latency: < 2s for task CRUD (polling-based)
+  - Bulk operations: < 10s for 100 tasks
+
+### 3.2 OPTIONAL UPGRADE (V1.0+): PostgreSQL 14+
+
+**Available as opt-in for power users who need:**
+- **LISTEN/NOTIFY:** Sub-500ms realtime sync (vs 30s polling with SQLite)
+- **Concurrent writes:** Multiple devices writing simultaneously
+- **Advanced FTS:** `pg_trgm` for fuzzy prefix search
+- **Scalability:** > 10 devices or > 10k tasks
+
+* **Migration path:** Automatic export/import tool (see Canvas 4: Migration Strategy)
+* **Config (home‑scale):** `max_connections=20`, `shared_buffers=128MB`, `work_mem=4MB`
 * **Features:**
+  - FTS via `tsvector` initially; optional **pg_trgm** for prefix search
+  - **LISTEN/NOTIFY** channel `haboard_updates` with payload deltas (task ID, changed fields, clocks)
+  - Optional **pg_cron** for periodic jobs (recurrence, cleanups)
 
-  * FTS via `tsvector` initially; can add **pg_trgm** for prefix search.
-  * **LISTEN/NOTIFY** channel `haboard_updates` with payload deltas (task ID, changed fields, clocks).
-  * Optional **pg_cron** for periodic jobs (recurrence, cleanups).
-
-### 3.2 Fallback: SQLite
-
-* Supported for minimal setups; WAL mode; caution with concurrent writes.
+**Backward compatibility:** SQLite remains supported indefinitely; no forced migration.
 
 ### 3.3 Schema Highlights
 
@@ -73,17 +98,31 @@ This is the **definitive tech plan** for the HA‑integrated to‑do app, mergin
 
 ## 4) Sync, Offline & Conflict Resolution (US‑25/26)
 
-### 4.1 Vector Clocks & Merge
+### 4.1 Conflict Resolution Strategy (Phased Approach)
 
-* Store per‑task **vector clocks** (`{device_id: counter}`) to detect concurrency.
+**MVP (Hybrid LWW + Simple CRDT):**
+* **Philosophy:** Start simple; add sophistication based on real user pain
+* **Approach:** Last-Write-Wins for most fields + special rules for critical fields
 * **Per‑field strategies:**
+  - `title`, `description/notes`, `due`, `priority` → **Last-Write-Wins** (timestamp + device_id tie-break)
+  - `completed` → **TRUE always wins** (once done, stays done; store `completed_at`, `completed_by`)
+  - `tags` → **Set union** (merge both sets; no data loss)
+* **Conflict notification:** Toast message: "⚠️ Merged changes from [device name]"
+* **Data stored:** `modified_at` (timestamp), `device_id`, `completed_at`
 
-  * `title` → conflict UI if concurrent (user choice)
-  * `description/notes` → **CRDT text** (Automerge) or pragmatic **line‑merge** with diff banner
-  * `due`, `priority`, `assignee` → latest timestamp wins (tie‑break by device ID)
-  * `completed` → **TRUE wins** (append‑only event with `completed_at`, `completed_by`)
-  * `tags` → **set union** with tombstones for removals
-  * `subtasks` → array CRDT (append + tombstones)
+**Beta (Add Vector Clocks):**
+* Store per‑task **vector clocks** (`{device_id: counter}`) to detect true concurrency
+* **Enhanced per‑field strategies:**
+  - `title` → conflict UI if concurrent (show both versions, user chooses)
+  - `description/notes` → **Line-based merge** with diff banner (or Automerge CRDT if needed)
+  - `due`, `priority`, `assignee` → latest by vector clock (not just timestamp)
+  - `completed` → **TRUE wins** (unchanged from MVP)
+  - `tags` → **set union with tombstones** for removals
+  - `subtasks` → array CRDT (append + tombstones)
+
+**V1.0 (Full CRDT for Notes):**
+* Optional: Integrate **Automerge** or **Yjs** for collaborative text editing in notes
+* Only if user feedback indicates need (e.g., families editing grocery lists together)
 
 ### 4.2 Client Outbox & Optimism
 
@@ -174,9 +213,14 @@ This is the **definitive tech plan** for the HA‑integrated to‑do app, mergin
 
 ## 11) Search & Indexing (US‑20)
 
-* PostgreSQL FTS (tsvector) over title/notes/tags/assignee; optional pg_trgm for prefix.
-* Materialised views/indexes for common filters (overdue, today, mine, tags).
-* **Target:** results **< 200 ms** on low‑end hardware; benchmarked in CI.
+**MVP/Beta: SQLite FTS5**
+* FTS5 virtual table over `title`, `notes`, `tags` with BM25 ranking
+* Proper indexes for common filters: `idx_tasks_due_date`, `idx_tasks_board_id`, `idx_tasks_completed`
+* **Target:** results **< 200 ms** on 1k tasks on low‑end hardware (Raspberry Pi 4); benchmarked in CI
+
+**V1.0+: PostgreSQL FTS (if upgraded)**
+* PostgreSQL FTS (`tsvector`) over title/notes/tags/assignee; optional `pg_trgm` for prefix
+* Materialised views/indexes for common filters (overdue, today, mine, tags)
 
 ---
 
@@ -256,7 +300,7 @@ This is the **definitive tech plan** for the HA‑integrated to‑do app, mergin
 | Layer              | Final Choice                                      | Why                                              |
 | ------------------ | ------------------------------------------------- | ------------------------------------------------ |
 | **Architecture**   | 2‑layer (App ⇄ Integration)                       | Lower latency, simpler ops, fewer failure points |
-| **Database**       | **PostgreSQL** (SQLite fallback)                  | Concurrency, LISTEN/NOTIFY, FTS, future‑proof    |
+| **Database**       | **SQLite** (PostgreSQL opt-in upgrade)            | Zero setup, WAL mode, FTS5, Pi-friendly          |
 | **Sync/Conflicts** | Vector clocks + per‑field merges                  | Data‑safe family collaboration                   |
 | **Notifications**  | **Web Push** + Companion fallback + SW scheduling | Reliable, fast, offline‑capable                  |
 | **Frontend**       | **SvelteKit + Tailwind + Motion One**             | Mobile/kiosk perf, PWA ergonomics                |

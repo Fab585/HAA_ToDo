@@ -44,10 +44,19 @@ This repository contains comprehensive planning documents that define the produc
 
 We're taking an **incremental delivery approach** that ships value early while building toward the full vision:
 
-- **MVP (v0.1)** — 2-3 months: Core task management + offline sync + basic HA integration
-- **Beta (v0.5)** — 4-6 months: + Kiosk mode + voice control + presence awareness
+- **MVP (v0.1)** — **6-8 weeks** *(reduced from 12 weeks)*: Core task management + offline sync + basic HA integration
+  - **Scope:** 5 core user stories (reduced from 8)
+  - **Tech:** SQLite + Hybrid conflict resolution (LWW + simple CRDT)
+  - **Goal:** Validate concept with 5-10 pilot users
+- **Beta (v0.5)** — 4-6 months: + Kiosk mode + voice control + presence awareness + shared boards
 - **V1.0** — 9-12 months: + Full collaboration + calendar + smart suggestions
 - **V2.0+** — 12+ months: + ML features + multi-home sync + integrations
+
+**Key Changes:**
+- ✅ SQLite-first (not PostgreSQL) — simpler setup, Pi-friendly
+- ✅ Reduced MVP scope — ships faster, validates earlier
+- ✅ Validation spikes before building — de-risks unknowns
+- ✅ Hybrid conflict resolution — prevents data loss without full CRDT complexity
 
 See **[Canvas 4: Phased Implementation Plan](docs/04-phased-implementation-plan.md)** for complete details.
 
@@ -99,8 +108,8 @@ See **[Canvas 4: Phased Implementation Plan](docs/04-phased-implementation-plan.
 | **Card** | Lit | Native Lovelace embedding with minimal overhead |
 | **State** | Tanstack Query + Nanostores + IndexedDB | Offline-first, optimistic updates, cross-surface state |
 | **Backend** | HA Custom Integration (Python/aiohttp) | Native HA integration with entities, services, events |
-| **Database** | PostgreSQL (SQLite fallback) | LISTEN/NOTIFY for real-time, full-text search, concurrency |
-| **Sync** | Vector Clocks + Per-Field Merge | Conflict-safe family collaboration |
+| **Database** | **SQLite** (PostgreSQL opt-in V1.0+) | Zero setup, WAL mode, FTS5, Pi-friendly |
+| **Sync** | Hybrid LWW + Simple CRDT → Vector Clocks (Beta) | Phased complexity: start simple, add based on need |
 | **Notifications** | Web Push + HA Companion | Reliable delivery with action buttons |
 | **Observability** | Structlog + Prometheus + OpenTelemetry | Production-grade monitoring |
 
@@ -162,21 +171,29 @@ See **[Canvas 4: Phased Implementation Plan](docs/04-phased-implementation-plan.
 We're following an **incremental delivery strategy** that ships value at each milestone. See [Canvas 4: Phased Implementation Plan](docs/04-phased-implementation-plan.md) for complete details.
 
 ### 🎯 MVP (v0.1) — "Prove the Concept"
-**Timeline:** 2-3 months | **Users:** 5-10 pilot testers
+**Timeline:** 6-8 weeks *(reduced from 12 weeks)* | **Users:** 5-10 pilot testers
 
-**Core Features:**
-- ✅ Quick add with natural language parsing (chrono)
+**Core Features (Reduced Scope):**
+- ✅ Quick add with **optional** NLP (primary: structured form; chrono as enhancement)
 - ✅ Swipe to complete/snooze with haptics
 - ✅ Offline-first PWA (IndexedDB + Service Worker)
-- ✅ Real-time sync with last-write-wins conflict resolution
+- ✅ Real-time sync with **hybrid conflict resolution** (LWW + completion-wins + tag-union)
 - ✅ Basic HA integration (todo entity + services)
-- ✅ Web Push notifications with action buttons
-- ✅ Mobile-optimized UI with Today/Overdue/All filters
+- ✅ Basic Web Push notifications (Open action only; digests deferred to Beta)
+- ✅ Mobile-optimized UI with Today/Overdue/All/Tag filters
+- ✅ Full-text search (SQLite FTS5, <200ms on 1k tasks)
+
+**Validation Spikes (Week 1-2):**
+- [ ] Offline sync POC (prove IndexedDB + WebSocket works)
+- [ ] NLP parsing quality (test chrono on 50 phrases)
+- [ ] Bundle size check (verify <150KB achievable)
+- [ ] SQLite FTS5 performance (validate <200ms search)
 
 **What We'll Learn:**
 - Is the concept useful enough to replace existing apps?
-- Is NLP parsing accurate enough?
-- Does offline sync work reliably?
+- Is structured form + optional NLP better than NLP-only?
+- Does hybrid conflict resolution prevent family frustration?
+- Is SQLite fast enough, or do we need PostgreSQL?
 
 ---
 
@@ -231,14 +248,21 @@ We're following an **incremental delivery strategy** that ships value at each mi
 
 ---
 
-## 🧪 Validation Spikes
+## 🧪 Validation Spikes (Week 1-2)
 
-Before full implementation, we'll run time-boxed experiments to validate unknowns:
+Before MVP development, we'll run **4 time-boxed experiments** (2 weeks) to validate critical unknowns:
 
-1. **Kiosk Drag Performance:** 50 task cards, 60 fps target, budget tablet
-2. **Realtime Under Load:** 4 clients, 10 writes/sec, p95 <500ms
-3. **Offline Conflict Merge:** Concurrent edits, verify vector clock resolution
-4. **Bundle Size Reality Check:** Prod build, main <150 KB, total <250 KB, Lighthouse ≥90
+1. **Offline Sync POC:** Prove IndexedDB + Outbox + WebSocket works reliably
+   - Test: 2 devices, add task offline, go online, sync in <2s
+   - Success: 10/10 syncs work; latency <2s
+2. **NLP Parsing Quality:** Test chrono accuracy on 50 phrases
+   - Success: >80% fully correct; <10% complete failures
+3. **Bundle Size Check:** Build minimal SvelteKit + deps
+   - Success: <100 KB (leaves margin for features)
+4. **SQLite FTS5 Performance:** Load 1k tasks, measure search latency
+   - Success: p95 <200ms on Raspberry Pi 4
+
+**Gate:** All spikes must pass before MVP development starts. No exceptions.
 
 ---
 
@@ -291,9 +315,12 @@ Enforced in CI with hard fail gates:
 
 **Prerequisites:**
 - Home Assistant 2024.1+
-- PostgreSQL 14+ (or SQLite for simple setups)
+- **SQLite** (included with Python; no external database needed)
 - Node.js 18+
 - Python 3.11+
+
+**Optional (for V1.0+ power users):**
+- PostgreSQL 14+ (for LISTEN/NOTIFY realtime sync)
 
 **Quick Start:**
 ```bash
@@ -358,16 +385,18 @@ npm run dev
 
 ## 📅 Project Status
 
-**Current Phase:** Planning & Documentation ✅
-**Next Phase:** Validation Spikes → MVP Development (v0.1)
+**Current Phase:** Planning & Documentation ✅ → **Validation Spikes (Week 1-2)**
+**Next Phase:** MVP Development (v0.1) — 6-8 weeks
 **Strategy:** Incremental delivery with continuous user feedback
 
 ### Completed Milestones
 - ✅ User stories & acceptance criteria (30 stories)
 - ✅ Technology stack selection & justification
-- ✅ Architecture design (2-layer, simplified sync)
+- ✅ Architecture design (2-layer, SQLite-first)
 - ✅ Comprehensive review & gap analysis
 - ✅ **Phased implementation plan (MVP → Beta → V1.0 → V2.0+)**
+- ✅ **Refined MVP scope (reduced from 8 to 5 core stories)**
+- ✅ **Added error handling, migration, and testing strategies**
 
 ### Immediate Next Steps (Weeks 1-2)
 - [ ] Run validation spikes (offline sync, NLP parsing, bundle size, FTS performance)

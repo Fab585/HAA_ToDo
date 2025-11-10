@@ -90,16 +90,29 @@ Existing to-do apps are great for individuals but **don't integrate with smart h
 
 We're **NOT building everything at once**. Instead, we ship value incrementally:
 
-#### **MVP (v0.1) — 2-3 months**
-**Goal:** Prove the concept with core task management
+#### **MVP (v0.1) — 6-8 weeks** *(reduced from 12 weeks)*
+**Goal:** Prove the concept with minimal viable features
+
+**Scope Reduction:**
+- 5 core user stories (down from 8)
+- SQLite-first (no PostgreSQL setup needed)
+- Structured form + optional NLP (not NLP-first)
+- Single-user experience (no assignees yet)
 
 **Features:**
-- Quick add with NLP ("Buy milk tomorrow 6pm #groceries")
+- Quick add with optional NLP parsing
 - Swipe to complete/snooze
 - Offline-first (IndexedDB + Service Worker)
-- Basic sync (last-write-wins)
+- **Hybrid sync** (LWW + completion-wins + tag-union)
 - Basic HA integration (todo entity + services)
-- Mobile PWA with Today/Overdue filters
+- Mobile PWA with Today/Overdue/Tag filters
+- Full-text search (SQLite FTS5)
+
+**Validation Spikes (Week 1-2):**
+- Offline sync POC
+- NLP parsing quality test
+- Bundle size verification
+- SQLite FTS5 performance
 
 **Success:** 5 pilot users use daily for 2 weeks; sync reliability >95%
 
@@ -165,20 +178,27 @@ PostgreSQL Database*
 |----------|--------|-----|
 | **Frontend** | SvelteKit + TypeScript | Small bundle (<150KB), reactive, PWA-native |
 | **State** | Tanstack Query + Nanostores | Offline-first, optimistic UI |
-| **Database** | PostgreSQL → SQLite (MVP) | Start simple; upgrade for realtime |
-| **Sync** | LWW (MVP) → Per-field merge (Beta) | Incremental complexity |
+| **Database** | **SQLite (MVP/Beta)** → PostgreSQL (opt-in V1.0+) | Zero setup; Pi-friendly; upgrade path available |
+| **Sync** | **Hybrid LWW+CRDT (MVP)** → Vector clocks (Beta) | Prevents data loss; incremental complexity |
 | **Notifications** | Web Push + HA Companion | Dual-channel reliability |
-| **NLP** | chrono + custom regex | Good enough for 80% of cases |
+| **NLP** | Optional chrono + structured form | User choice; don't force NLP |
 
 ### Simplified for MVP
 
-**Defer to Beta/V1.0:**
-- Vector clocks → Start with last-write-wins
-- PostgreSQL LISTEN/NOTIFY → Use polling initially
-- CRDT text merge → Simple conflict UI
-- Kiosk mode, voice, presence → Beta features
+**Key Strategy Changes (NEW):**
+- **SQLite-first:** No PostgreSQL setup; WAL mode + FTS5 sufficient for home use
+- **Hybrid conflict resolution:** LWW + completion-wins + tag-union (prevents data loss without full CRDT)
+- **Optional NLP:** Structured form primary; chrono parsing as enhancement
+- **Reduced scope:** 5 user stories (not 8); single-user (no assignees yet)
+- **Validation spikes:** 2-week experiments before building
 
-**Why:** Ship faster, validate concept, add sophistication based on learnings.
+**Defer to Beta/V1.0:**
+- Vector clocks → Start with hybrid LWW+CRDT
+- PostgreSQL LISTEN/NOTIFY → Use 30s polling with SQLite initially
+- Full CRDT text merge → Line-based merge in Beta
+- Kiosk mode, voice, presence, assignees → Beta features
+
+**Why:** Ship in 6-8 weeks (not 12 weeks), validate concept earlier, add sophistication based on real usage.
 
 ---
 
@@ -210,10 +230,10 @@ Before building, we run 2-week time-boxed experiments:
 | Phase | Duration | Effort (person-weeks) |
 |-------|----------|----------------------|
 | Validation Spikes | 2 weeks | 1-2 weeks |
-| MVP Development | 10 weeks | 8-12 weeks |
+| MVP Development | **6-8 weeks** *(reduced from 10-12)* | 6-8 weeks |
 | Beta Development | +12 weeks | +10-15 weeks |
 | V1.0 Development | +16 weeks | +15-20 weeks |
-| **Total to V1.0** | **~40 weeks** | **~45-60 weeks** |
+| **Total to V1.0** | **~36-38 weeks** | **~40-55 weeks** |
 
 ### Team Composition (Recommended)
 

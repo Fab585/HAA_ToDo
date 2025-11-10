@@ -31,34 +31,40 @@ Each phase delivers **real user value** and validates assumptions before buildin
 
 ## 🚀 MVP (v0.1) — "Prove the Concept"
 
-**Timeline:** 8-12 weeks
-**Goal:** Ship something useful that validates core value prop
+**Timeline:** 6-8 weeks *(reduced from 8-12 weeks via scope refinement)*
+**Goal:** Ship minimal viable product that validates offline-first + HA integration
 **Users:** 5-10 pilot testers (you + trusted HA community members)
 
-### User Stories Included
+### User Stories Included *(Reduced from 8 to 5 core stories)*
 
 | ID | Story | Why MVP | Complexity |
 |----|-------|---------|------------|
-| **US-1** | Quick Add (Natural Language) | Core value — fast capture | Medium |
-| **US-3** | Quick Capture from Anywhere | Core UX — always accessible | Low |
+| **US-1** | Quick Add (Natural Language - Optional) | Core value — fast capture | Medium |
 | **US-7** | One-Swipe Triage | Core UX — fast completion | Low |
-| **US-8** | Actionable Notifications (basic) | Mobile utility | Medium |
-| **US-11** | Assign to a Person | Family usefulness (basic) | Low |
 | **US-20** | Powerful Search | Essential for 50+ tasks | Medium |
 | **US-25** | Offline-First | Core differentiator | High |
 | **US-26** | Real-Time Sync (basic) | Core differentiator | High |
 
+### Deferred to Beta (Scope Reduction)
+
+| ID | Story | Why Deferred | Move to |
+|----|-------|--------------|---------|
+| **US-3** | Quick Capture from Anywhere | Keyboard shortcuts are polish | Beta |
+| **US-8** | Actionable Notifications | Basic notifications sufficient for MVP | Beta |
+| **US-11** | Assign to a Person | Family features belong with shared boards | Beta |
+
 ### Features Included
 
 #### ✅ Core Task Management
-- **Quick Add with NLP:** "Buy milk tomorrow 6pm #groceries" → parsed task
-  - Use `chrono` for dates/times
-  - Simple regex for `#tags`, `!priority`, `@assignee`
-  - Fallback to structured form if parsing fails
+- **Quick Add with OPTIONAL NLP:**
+  - **Primary:** Structured form (title, date picker, time picker, tags dropdown)
+  - **Optional Enhancement:** Parse natural language with `chrono` if present
+  - Philosophy: Don't overestimate NLP accuracy; let users choose input method
 - **CRUD Operations:** Create, read, update, delete tasks
-- **Basic fields:** Title, notes, due date/time, priority (none/low/medium/high), tags, assignee
+- **Basic fields:** Title, notes, due date/time, priority (none/low/medium/high), tags
 - **Swipe gestures:** Right to complete, left to snooze (presets only: 1h, 3h, tomorrow)
-- **Filters:** Today, Overdue, All, By Tag, By Assignee
+- **Filters:** Today, Overdue, All, By Tag
+- **NO assignee in MVP** — Single-user experience; family features in Beta
 
 #### ✅ Mobile PWA (Offline-Capable)
 - **SvelteKit PWA** with Service Worker
@@ -78,22 +84,31 @@ Each phase delivers **real user value** and validates assumptions before buildin
 - **REST API:** `/api/haboard/tasks` (CRUD endpoints)
 - **Basic WebSocket:** Subscribe to task updates
 
-#### ✅ Sync (Simplified)
-- **Database:** PostgreSQL (primary) OR SQLite (fallback) — pick one for MVP
-  - **Recommendation:** Start with SQLite for simplicity; migrate to PostgreSQL in Beta
-- **Conflict Resolution:** **Last-Write-Wins** (LWW) with timestamp
-  - Store `modified_at` + `modified_by_device_id`
-  - If conflict: latest timestamp wins
-  - Show toast: "⚠️ Conflict resolved: kept most recent version"
+#### ✅ Sync (Simplified for MVP)
+- **Database:** **SQLite ONLY** (WAL mode + FTS5)
+  - No PostgreSQL in MVP — reduces deployment complexity
+  - Migration to PostgreSQL planned for Beta if LISTEN/NOTIFY needed
+  - Optimize SQLite: proper indexes, query planning, FTS5 for search
+
+- **Conflict Resolution:** **Hybrid LWW + Simple CRDT**
+  - **Task metadata:** Last-Write-Wins with timestamp (title, notes, due, priority)
+  - **Task completion:** TRUE always wins (once done, stays done)
+  - **Tags:** Set union (no data loss on merge)
+  - **Why:** Prevents common family frustration (lost tasks) without full CRDT complexity
+  - Store: `modified_at` + `device_id` + `completed_at`
+  - Show toast on conflict: "⚠️ Merged changes from [device]"
+
 - **Sync Protocol:**
-  - Outbox pattern (IndexedDB queue)
-  - Retry with exponential backoff
-  - WebSocket for realtime push (with polling fallback)
+  - Outbox pattern (IndexedDB queue for offline writes)
+  - Retry with exponential backoff (2s, 4s, 8s, 16s)
+  - WebSocket for realtime push (with 30s polling fallback)
+  - Sync on app foreground + visibility change
 
 #### ✅ Notifications (Basic)
-- **Web Push** (primary) with action buttons (Complete, Snooze, Open)
-- **Timing:** Due-now reminders (at due time)
-- **Targeting:** Notify assignee only (no multi-device logic yet)
+- **Web Push** (primary) with single action button (Open)
+- **Timing:** Due-now reminders only (at due time, no digest yet)
+- **Targeting:** All devices (no assignee filtering in MVP)
+- **Defer to Beta:** Action buttons (Complete, Snooze), smart digests, assignee targeting
 
 #### ✅ Basic UI/UX
 - **Mobile-first design:**
@@ -141,43 +156,159 @@ Each phase delivers **real user value** and validates assumptions before buildin
 - Is LWW conflict resolution acceptable?
 - Do users want kiosk mode or is mobile enough?
 
+### Error Handling & Degradation (NEW)
+
+**Critical: Define fallback behaviors early to prevent user frustration**
+
+| Error Scenario | Degradation Strategy | User Experience |
+|----------------|---------------------|-----------------|
+| **WebSocket disconnects** | Fall back to 30s polling | Toast: "Syncing slower — reconnecting..." |
+| **IndexedDB quota exceeded** | Warn at 80%; offer to archive old completed tasks | Modal: "Storage almost full. Archive tasks?" |
+| **HA integration crashes** | Local-only mode; queue all changes | Banner: "Offline mode — changes will sync when server returns" |
+| **Network timeout** | Retry 4 times (2s, 4s, 8s, 16s); then local-only | No UI change; sync icon spins; toast on failure |
+| **Conflict resolution fails** | Show side-by-side diff; let user choose | Modal: "Both devices changed '[task title]'. Keep which version?" |
+| **Service Worker update fails** | Prompt user to refresh | Toast: "Update available. Refresh to get latest features." |
+
+**Recovery Mechanisms:**
+- **Auto-retry:** All network operations retry with exponential backoff
+- **Local-first:** App fully functional offline; sync when connection restored
+- **State reconciliation:** On reconnect, sync all outbox items before new operations
+- **Error logging:** Ship errors to HA logs (integration) + browser console (PWA)
+
+### Migration Strategy (NEW)
+
+**Zero-downtime upgrades between versions**
+
+#### MVP → Beta Migration (SQLite stays, schema changes)
+**Changes:**
+- Add `board_id`, `assignee_user_id` columns to tasks table
+- Add `boards` and `board_members` tables
+- Add `vector_clock` JSONB column for improved conflict resolution
+
+**Migration Process:**
+1. **Pre-migration check:** Validate SQLite file integrity
+2. **Backup:** Copy `haboard.db` to `haboard.db.backup-{timestamp}`
+3. **Schema upgrade:** Run `alembic upgrade head` (auto-applied by integration)
+4. **Data migration:**
+   - Create default "Personal" board for all existing tasks
+   - Set `vector_clock` = `{"device_id": modified_at}` (initialize from LWW)
+5. **Rollback plan:** If migration fails, restore from backup; integration stays at MVP version
+
+**User Impact:** Automatic on integration restart; no action required
+
+#### Beta → V1.0 Migration (Optional: SQLite → PostgreSQL)
+**Only if user wants PostgreSQL for LISTEN/NOTIFY performance**
+
+**Migration Process:**
+1. **User opts in:** Configuration UI in HA integration settings
+2. **Export SQLite to SQL dump:** `sqlite3 haboard.db .dump > export.sql`
+3. **Convert to PostgreSQL syntax:** Script handles type conversions
+4. **Import to PostgreSQL:** `psql < export-converted.sql`
+5. **Update integration config:** Point to PostgreSQL connection string
+6. **Validation:** Check row counts match; spot-check 10 tasks
+7. **Rollback plan:** Keep SQLite file; revert config if issues found
+
+**User Impact:** Opt-in only; requires PostgreSQL setup; 10-30 min downtime
+
+**Backward Compatibility Promise:**
+- Old PWA versions continue working with new integration (API versioned)
+- Integration auto-migrates database schema on upgrade
+- No breaking changes to WebSocket protocol within major versions
+
+### Testing Strategy (NEW)
+
+**5 Golden Paths (Must pass before release)**
+
+These critical flows must work flawlessly:
+
+1. **Offline Add → Sync → Complete**
+   - Open app (offline)
+   - Add task "Buy milk"
+   - Go online
+   - See task sync to server (< 2s)
+   - Complete task on different device
+   - Original device sees completion (< 2s)
+
+2. **Concurrent Edit → Conflict Resolution**
+   - Device A: Edit task title to "Buy whole milk" (offline)
+   - Device B: Edit same task title to "Buy oat milk" (offline)
+   - Both go online
+   - Verify conflict resolution (LWW with toast notification)
+   - No data loss (history preserved)
+
+3. **Voice Add → Notification → Swipe Complete**
+   - Say "Hey HA, add buy groceries to my todo list tomorrow 6pm"
+   - Verify task appears in PWA with correct due date
+   - Wait until tomorrow 6pm
+   - Receive Web Push notification
+   - Tap notification → opens app
+   - Swipe task right to complete
+
+4. **Search with 1000 Tasks**
+   - Import 1000 sample tasks
+   - Type search query: "milk"
+   - Results appear in < 200ms
+   - Verify FTS5 ranking (exact match ranks higher)
+
+5. **App Offline for 24h → Bulk Sync**
+   - Add 20 tasks offline over 24 hours
+   - Go online
+   - All 20 sync successfully (< 10s)
+   - Verify order preserved
+   - No duplicates
+
+**Test Coverage Targets:**
+- **Unit tests:** >80% coverage for business logic (sync, conflict resolution, NLP parsing)
+- **Integration tests:** All API endpoints + WebSocket messages
+- **E2E tests:** 5 golden paths (Playwright on mobile viewport)
+- **Performance tests:** Bundle size, TTI, sync latency benchmarked in CI
+- **Accessibility tests:** axe-core on all pages; keyboard navigation manual test
+
+**Test Execution:**
+- **Pre-commit:** Unit tests (< 5s)
+- **Pre-push:** Unit + integration tests (< 30s)
+- **CI (every push):** Full suite + performance + bundle size
+- **Weekly:** E2E on real devices (Android mid-range, iOS Safari, tablet)
+
 ### Technical Milestones (MVP)
 
-**Week 1-2: Foundation**
+**Week 1-2: Validation Spikes + Foundation**
+- [ ] **Validation Spike 1:** Offline sync POC (IndexedDB + WebSocket)
+- [ ] **Validation Spike 2:** NLP parsing quality (50 test phrases with chrono)
+- [ ] **Validation Spike 3:** Bundle size check (SvelteKit minimal build)
+- [ ] **Validation Spike 4:** SQLite FTS5 performance (1k tasks, <200ms queries)
+- [ ] **Gate:** All spikes must pass before continuing
 - [ ] Repo setup (monorepo: `/custom_components/haboard`, `/frontend`)
-- [ ] CI/CD pipeline (GitHub Actions: lint, test, build)
-- [ ] Database schema (SQLite initial — tasks, boards, tags tables)
+- [ ] CI/CD pipeline (GitHub Actions: lint, test, build, bundle size enforcement)
+- [ ] Database schema (SQLite with WAL mode + FTS5 for tasks table)
 - [ ] HA integration skeleton (manifest, config_flow, entities)
 
-**Week 3-4: Backend**
-- [ ] REST API (FastAPI or aiohttp views in HA integration)
+**Week 3-4: Backend + Sync**
+- [ ] REST API (aiohttp views in HA integration)
 - [ ] CRUD endpoints with Pydantic validation
 - [ ] OpenAPI spec generation
-- [ ] Basic WebSocket (subscribe/broadcast pattern)
+- [ ] WebSocket with 30s polling fallback
+- [ ] Hybrid conflict resolution (LWW + completion-wins + tag-union)
+- [ ] Error handling (retry logic, local-only fallback)
 
-**Week 5-6: Frontend Foundation**
+**Week 5-6: Frontend Core + Offline**
 - [ ] SvelteKit scaffold + TailwindCSS
 - [ ] TypeScript types from OpenAPI (`openapi-typescript`)
 - [ ] Tanstack Query setup + WebSocket integration
-- [ ] IndexedDB wrapper + Outbox implementation
-
-**Week 7-8: Core Features**
-- [ ] Quick add with chrono NLP
-- [ ] Task list with filters (Today, Overdue, All)
-- [ ] Swipe gestures (@use-gesture/svelte)
-- [ ] Search (SQLite FTS5)
-
-**Week 9-10: Offline & Sync**
-- [ ] Service Worker + Workbox caching
-- [ ] Outbox retry logic
-- [ ] LWW conflict resolution
+- [ ] IndexedDB wrapper + Outbox pattern with retry
+- [ ] Service Worker + offline cache strategy
 - [ ] Optimistic UI updates
 
-**Week 11-12: Polish & Deploy**
-- [ ] Notifications (Web Push)
-- [ ] Settings screen (preferences, account)
-- [ ] E2E tests (Playwright: add → sync → complete)
+**Week 7-8: Features + Polish**
+- [ ] Quick add (structured form + optional chrono NLP)
+- [ ] Task list with filters (Today, Overdue, All, By Tag)
+- [ ] Swipe gestures with haptics (@use-gesture/svelte)
+- [ ] Search (SQLite FTS5)
+- [ ] Basic settings screen
+- [ ] Basic Web Push notifications (Open action only)
+- [ ] E2E tests for 5 golden paths (Playwright)
 - [ ] Deploy to pilot users (HA addon or manual install)
+- [ ] 2-week feedback cycle
 
 ---
 
