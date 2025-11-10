@@ -318,33 +318,138 @@ Enforced in CI with hard fail gates:
 
 ## 🛠️ Development Setup
 
-> **Note:** This section will be populated once development begins. The repository currently contains planning documents.
+### Prerequisites
 
-**Prerequisites:**
-- Home Assistant 2024.1+
-- **SQLite** (included with Python; no external database needed)
-- Node.js 18+
-- Python 3.11+
+- **Home Assistant 2024.1+** (development instance recommended)
+- **Node.js 18+** and **npm** (for frontend development)
+- **Python 3.11+** (provided by Home Assistant)
+- **SQLite** (included with Python; no external database setup needed)
+- **Git**
 
 **Optional (for V1.0+ power users):**
 - PostgreSQL 14+ (for LISTEN/NOTIFY realtime sync)
 
-**Quick Start:**
+### Installation Options
+
+#### Option 1: HACS Custom Repository (Recommended for Development)
+
+1. **Add as custom repository in HACS:**
+   - Open HACS in your Home Assistant
+   - Go to "Integrations"
+   - Click the three dots menu (top right) → "Custom repositories"
+   - Add repository URL: `https://github.com/Fab585/HAA_ToDo`
+   - Category: "Integration"
+   - Click "Add"
+
+2. **Install HABoard:**
+   - Search for "HABoard" in HACS
+   - Click "Download"
+   - Restart Home Assistant
+
+3. **Add integration:**
+   - Go to Settings → Devices & Services
+   - Click "Add Integration"
+   - Search for "HABoard"
+   - Follow setup wizard
+
+#### Option 2: Manual Installation (Advanced)
+
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/haboard.git
-cd haboard
+git clone https://github.com/Fab585/HAA_ToDo.git
+cd HAA_ToDo
 
-# Install dependencies
-npm install
-pip install -r requirements.txt
+# Copy integration to HA config directory
+cp -r custom_components/haboard /path/to/homeassistant/config/custom_components/
 
-# Set up database
-./scripts/setup-db.sh
-
-# Run dev server
-npm run dev
+# Restart Home Assistant
 ```
+
+### Development Workflow
+
+For active development, you'll typically run two processes:
+
+**Terminal 1: Frontend Development Server**
+```bash
+cd frontend
+npm install
+npm run dev
+# Frontend runs on http://localhost:5173
+```
+
+**Terminal 2: Home Assistant Integration**
+```bash
+# Home Assistant runs with the custom integration
+# Changes to Python code require HA restart
+# Changes to frontend require npm build + browser refresh
+```
+
+### Building for Production
+
+```bash
+# Build frontend for production
+cd frontend
+npm run build
+# Output: frontend/build/ (served by HA integration)
+
+# The integration automatically serves built frontend files
+```
+
+### Testing
+
+```bash
+# Python tests (integration)
+pip install -r requirements-dev.txt
+pytest
+
+# Frontend tests
+cd frontend
+npm test
+
+# Linting & formatting
+ruff check .              # Python linting
+black .                   # Python formatting
+npm run lint              # Frontend linting (Prettier + ESLint)
+npm run format            # Frontend formatting
+```
+
+### Development Tips
+
+- **Frontend hot reload:** The `npm run dev` server supports hot module replacement
+- **Integration reload:** Python changes require HA restart or use the "Developer Tools → YAML → Reload Custom Integrations" (when available)
+- **Database location:** SQLite database will be created at `<config>/.storage/haboard.db`
+- **Logs:** Check Home Assistant logs for integration errors: Settings → System → Logs
+- **HACS updates:** Push to main branch, then click "Redownload" in HACS to test updates
+
+### Project Structure
+
+```
+HAA_ToDo/
+├── custom_components/haboard/  # HA Custom Integration
+│   ├── __init__.py             # Integration entry point
+│   ├── config_flow.py          # Configuration UI
+│   ├── manifest.json           # Integration metadata
+│   └── const.py                # Constants
+├── frontend/                   # SvelteKit PWA
+│   ├── src/                    # Source code
+│   ├── static/                 # Static assets
+│   ├── package.json            # Frontend dependencies
+│   └── vite.config.ts          # Build configuration
+├── docs/                       # Planning documents
+├── hacs.json                   # HACS metadata
+├── requirements.txt            # Python dependencies
+└── requirements-dev.txt        # Dev dependencies
+```
+
+### Next Steps After Installation
+
+Once installed, the integration is ready for Week 0 Day 2-5 development:
+- **Day 2:** CI/CD pipeline setup (GitHub Actions)
+- **Day 3:** Development environment (.devcontainer, git hooks)
+- **Day 4:** Database schema implementation
+- **Day 5:** Validation on your dev HA instance
+
+See [Canvas 4: Phased Implementation Plan](docs/04-phased-implementation-plan.md) for complete week-by-week development guide.
 
 ---
 

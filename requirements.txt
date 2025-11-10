@@ -1,0 +1,6 @@
+# HABoard Backend Dependencies
+# Home Assistant provides these, but listed for reference
+
+# aiohttp is provided by HA
+# aiosqlite for async SQLite operations
+aiosqlite>=0.19.0
