@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
+	import { fade, fly, scale } from 'svelte/transition';
+	import { quintOut } from 'svelte/easing';
 	import type { Task } from '$lib/types/task';
 	import { PRIORITY_COLORS } from '$lib/types/task';
 	import { tags } from '$lib/stores/sync';
@@ -93,17 +95,18 @@
 	on:touchstart={handleTouchStart}
 	on:touchmove={handleTouchMove}
 	on:touchend={handleTouchEnd}
+	transition:fly={{ y: 20, duration: 300, easing: quintOut }}
 >
 	<!-- Swipe backgrounds -->
 	{#if isSwipingRight}
-		<div class="absolute inset-0 bg-green-500 flex items-center justify-start px-4">
+		<div class="absolute inset-0 bg-green-500 flex items-center justify-start px-4" transition:fade={{ duration: 150 }}>
 			<svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
 			</svg>
 		</div>
 	{/if}
 	{#if isSwipingLeft}
-		<div class="absolute inset-0 bg-red-500 flex items-center justify-end px-4">
+		<div class="absolute inset-0 bg-red-500 flex items-center justify-end px-4" transition:fade={{ duration: 150 }}>
 			<svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 				<path
 					stroke-linecap="round"

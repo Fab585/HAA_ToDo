@@ -26,3 +26,108 @@
 		color-scheme: dark;
 	}
 }
+
+/* Smooth animations */
+@layer utilities {
+	/* Button press animation */
+	.btn-press {
+		@apply active:scale-95 transition-transform duration-100;
+	}
+
+	/* Smooth fade-in on page load */
+	@keyframes fadeIn {
+		from {
+			opacity: 0;
+			transform: translateY(10px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	.animate-fade-in {
+		animation: fadeIn 0.3s ease-out;
+	}
+
+	/* Loading pulse */
+	@keyframes pulse-slow {
+		0%,
+		100% {
+			opacity: 1;
+		}
+		50% {
+			opacity: 0.5;
+		}
+	}
+
+	.animate-pulse-slow {
+		animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+	}
+
+	/* Smooth scale on hover */
+	.hover-scale {
+		@apply transition-transform duration-200;
+	}
+
+	.hover-scale:hover {
+		@apply scale-105;
+	}
+
+	/* Smooth shadow transitions */
+	.shadow-smooth {
+		@apply transition-shadow duration-300;
+	}
+}
+
+/* Button enhancements */
+button {
+	@apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500;
+}
+
+/* Input focus animations */
+input:focus,
+textarea:focus {
+	@apply ring-2 ring-blue-500 ring-opacity-50;
+	animation: focusRing 0.2s ease-out;
+}
+
+@keyframes focusRing {
+	from {
+		transform: scale(0.98);
+	}
+	to {
+		transform: scale(1);
+	}
+}
+
+/* Checkbox animation */
+input[type='checkbox']:checked {
+	animation: checkboxPop 0.2s ease-out;
+}
+
+@keyframes checkboxPop {
+	0% {
+		transform: scale(1);
+	}
+	50% {
+		transform: scale(1.1);
+	}
+	100% {
+		transform: scale(1);
+	}
+}
+
+/* Loading spinner */
+@keyframes spin-slow {
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+.animate-spin-slow {
+	animation: spin-slow 1.5s linear infinite;
+}

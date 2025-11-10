@@ -275,7 +275,7 @@
 			{#if !showCreateForm && !editingTask}
 				<button
 					on:click={() => (showCreateForm = true)}
-					class="w-full py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors shadow-lg hover:shadow-xl"
+					class="w-full py-3 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white rounded-lg font-medium transition-all shadow-lg hover:shadow-xl"
 				>
 					+ New Task
 				</button>

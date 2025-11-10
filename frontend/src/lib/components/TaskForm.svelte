@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
+	import { fly, scale } from 'svelte/transition';
+	import { quintOut } from 'svelte/easing';
 	import type { Task } from '$lib/types/task';
 	import { TaskPriority, PRIORITY_LABELS } from '$lib/types/task';
 	import { tags } from '$lib/stores/sync';
@@ -96,7 +98,11 @@
 	}
 </script>
 
-<form on:submit|preventDefault={handleSubmit} class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow space-y-4">
+<form
+	on:submit|preventDefault={handleSubmit}
+	class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow space-y-4"
+	transition:fly={{ y: -20, duration: 300, easing: quintOut }}
+>
 	<!-- Title -->
 	<div>
 		<label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
