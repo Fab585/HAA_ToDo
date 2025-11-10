@@ -252,10 +252,12 @@ export async function createTask(data: Partial<Task>): Promise<Task> {
 			console.error('Failed to create task on server:', error);
 			// Add to outbox for later sync
 			await db.addToOutbox('create', task.id, task);
+			await registerBackgroundSync();
 		}
 	} else {
 		// Add to outbox for later sync
 		await db.addToOutbox('create', task.id, task);
+		await registerBackgroundSync();
 	}
 
 	return task;
@@ -295,10 +297,12 @@ export async function updateTask(id: string, data: Partial<Task>): Promise<Task 
 			console.error('Failed to update task on server:', error);
 			// Add to outbox for later sync
 			await db.addToOutbox('update', id, data);
+			await registerBackgroundSync();
 		}
 	} else {
 		// Add to outbox for later sync
 		await db.addToOutbox('update', id, data);
+		await registerBackgroundSync();
 	}
 
 	return updated;
@@ -320,10 +324,12 @@ export async function deleteTask(id: string): Promise<void> {
 			console.error('Failed to delete task on server:', error);
 			// Add to outbox for later sync
 			await db.addToOutbox('delete', id);
+			await registerBackgroundSync();
 		}
 	} else {
 		// Add to outbox for later sync
 		await db.addToOutbox('delete', id);
+		await registerBackgroundSync();
 	}
 }
 
@@ -342,6 +348,21 @@ export async function toggleTaskComplete(id: string): Promise<void> {
 	const completed_at = completed ? new Date().toISOString() : null;
 
 	await updateTask(id, { completed, completed_at });
+}
+
+/**
+ * Register background sync for outbox processing
+ */
+async function registerBackgroundSync(): Promise<void> {
+	if ('serviceWorker' in navigator && 'sync' in ServiceWorkerRegistration.prototype) {
+		try {
+			const registration = await navigator.serviceWorker.ready;
+			await registration.sync.register('haboard-sync');
+			console.log('Background sync registered for outbox processing');
+		} catch (error) {
+			console.warn('Background sync registration failed:', error);
+		}
+	}
 }
 
 /**
