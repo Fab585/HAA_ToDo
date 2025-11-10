@@ -1,0 +1,65 @@
+name: Python CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["main", "develop"]
+
+jobs:
+  lint:
+    name: Lint Python Code
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Run ruff (linting)
+        run: ruff check .
+
+      - name: Run black (formatting check)
+        run: black --check .
+
+      - name: Run mypy (type checking)
+        run: mypy custom_components/haboard --ignore-missing-imports
+        continue-on-error: true  # Optional during early development
+
+  test:
+    name: Test Python Code
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Run pytest
+        run: pytest --cov=custom_components/haboard --cov-report=xml --cov-report=term
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: matrix.python-version == '3.11'
+        with:
+          files: ./coverage.xml
+          fail_ci_if_error: false

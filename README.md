@@ -462,12 +462,13 @@ See [Canvas 4: Phased Implementation Plan](docs/04-phased-implementation-plan.md
 - [Review & Analysis](docs/03-review-and-analysis.md)
 - [**Phased Implementation Plan**](docs/04-phased-implementation-plan.md) ⭐ **For developers**
 
-### Technical Specs (Coming Soon)
-- Database Schema Design
-- API Reference (OpenAPI)
-- WebSocket Protocol
-- Sync & Conflict Resolution
-- Home Assistant Integration Guide
+### Technical Specs
+- [**CI/CD Pipeline**](docs/ci-cd-pipeline.md) ⭐ **For contributors**
+- Database Schema Design (Coming Soon)
+- API Reference (OpenAPI) (Coming Soon)
+- WebSocket Protocol (Coming Soon)
+- Sync & Conflict Resolution (Coming Soon)
+- Home Assistant Integration Guide (Coming Soon)
 
 ### User Guides (Coming Soon)
 - Installation Guide
