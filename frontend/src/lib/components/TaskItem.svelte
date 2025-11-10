@@ -2,6 +2,7 @@
 	import { createEventDispatcher } from 'svelte';
 	import type { Task } from '$lib/types/task';
 	import { PRIORITY_COLORS } from '$lib/types/task';
+	import { tags } from '$lib/stores/sync';
 
 	export let task: Task;
 
@@ -188,11 +189,13 @@
 					<!-- Tags -->
 					{#if task.tags.length > 0}
 						<div class="flex gap-1 flex-wrap">
-							{#each task.tags as tag}
+							{#each task.tags as tagName}
+								{@const tagInfo = $tags.find((t) => t.name === tagName)}
 								<span
-									class="px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-xs"
+									class="px-2 py-0.5 rounded-full text-xs text-white font-medium"
+									style="background-color: {tagInfo?.color || '#3b82f6'}"
 								>
-									{tag}
+									{tagName}
 								</span>
 							{/each}
 						</div>

@@ -2,6 +2,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import TaskForm from '$lib/components/TaskForm.svelte';
 	import TaskItem from '$lib/components/TaskItem.svelte';
+	import TagManager from '$lib/components/TagManager.svelte';
 	import {
 		tasks,
 		incompleteTasks,
@@ -22,6 +23,7 @@
 
 	let showCreateForm = false;
 	let editingTask: Task | null = null;
+	let showTagManager = false;
 	let filter: 'all' | 'active' | 'completed' = 'active';
 	let searchQuery = '';
 	let loading = true;
@@ -156,6 +158,27 @@
 						<span class="w-2 h-2 rounded-full {$isOnline ? 'bg-green-500' : 'bg-red-500'}"></span>
 						{$isOnline ? 'Online' : 'Offline'}
 					</div>
+
+					<!-- Tags button -->
+					<button
+						on:click={() => (showTagManager = true)}
+						class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+						title="Manage tags"
+					>
+						<svg
+							class="w-5 h-5 text-gray-600 dark:text-gray-400"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+							/>
+						</svg>
+					</button>
 
 					<!-- Sync button -->
 					<button
@@ -313,3 +336,8 @@
 		</main>
 	</div>
 </div>
+
+<!-- Tag Manager Modal -->
+{#if showTagManager}
+	<TagManager on:close={() => (showTagManager = false)} on:tagCreated={() => {}} />
+{/if}

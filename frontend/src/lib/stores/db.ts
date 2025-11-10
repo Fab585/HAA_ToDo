@@ -156,6 +156,16 @@ export async function saveTags(tags: Tag[]): Promise<void> {
 	await tx.done;
 }
 
+export async function deleteTag(tagName: string): Promise<void> {
+	const db = await getDB();
+	// Find tag by name and delete
+	const tags = await db.getAll('tags');
+	const tag = tags.find((t) => t.name === tagName);
+	if (tag) {
+		await db.delete('tags', tag.id);
+	}
+}
+
 /**
  * Outbox operations (for offline sync)
  */

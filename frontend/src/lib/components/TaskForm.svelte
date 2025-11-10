@@ -3,6 +3,8 @@
 	import type { Task } from '$lib/types/task';
 	import { TaskPriority, PRIORITY_LABELS } from '$lib/types/task';
 	import { tags } from '$lib/stores/sync';
+	import { apiClient } from '$lib/api/client';
+	import * as db from '$lib/stores/db';
 
 	export let task: Task | null = null;
 	export let isEditing = false;
@@ -18,6 +20,11 @@
 	let due_time = task?.due_time || '';
 	let priority = task?.priority || TaskPriority.None;
 	let selectedTags: string[] = task?.tags || [];
+
+	// Inline tag creation
+	let showTagInput = false;
+	let newTagName = '';
+	let isCreatingTag = false;
 
 	function handleSubmit() {
 		if (!title.trim()) {
@@ -53,6 +60,38 @@
 			selectedTags = selectedTags.filter((t) => t !== tag);
 		} else {
 			selectedTags = [...selectedTags, tag];
+		}
+	}
+
+	async function handleCreateTag() {
+		const trimmedName = newTagName.trim();
+		if (!trimmedName) return;
+
+		// Check if tag already exists
+		if ($tags.some((t) => t.name.toLowerCase() === trimmedName.toLowerCase())) {
+			selectedTags = [...selectedTags, trimmedName];
+			newTagName = '';
+			showTagInput = false;
+			return;
+		}
+
+		isCreatingTag = true;
+		try {
+			const newTag = await apiClient.createTag({
+				name: trimmedName,
+				color: '#3b82f6'
+			});
+
+			tags.update((t) => [...t, newTag]);
+			await db.saveTag(newTag);
+
+			selectedTags = [...selectedTags, newTag.name];
+			newTagName = '';
+			showTagInput = false;
+		} catch (err) {
+			console.error('Failed to create tag:', err);
+		} finally {
+			isCreatingTag = false;
 		}
 	}
 </script>
@@ -134,26 +173,73 @@
 	</div>
 
 	<!-- Tags -->
-	{#if $tags.length > 0}
-		<div>
-			<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-				Tags
-			</label>
-			<div class="flex flex-wrap gap-2">
-				{#each $tags as tag}
+	<div>
+		<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+			Tags
+		</label>
+		<div class="flex flex-wrap gap-2">
+			{#each $tags as tag}
+				<button
+					type="button"
+					on:click={() => toggleTag(tag.name)}
+					class="px-3 py-1 rounded-full text-sm {selectedTags.includes(tag.name)
+						? 'bg-blue-500 text-white'
+						: 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'} hover:shadow transition-all"
+				>
+					{tag.name}
+				</button>
+			{/each}
+
+			<!-- Add new tag inline -->
+			{#if showTagInput}
+				<div class="flex items-center gap-1">
+					<input
+						type="text"
+						bind:value={newTagName}
+						placeholder="New tag"
+						class="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+						on:keydown={(e) => {
+							if (e.key === 'Enter') {
+								e.preventDefault();
+								handleCreateTag();
+							} else if (e.key === 'Escape') {
+								showTagInput = false;
+								newTagName = '';
+							}
+						}}
+						disabled={isCreatingTag}
+						autofocus
+					/>
 					<button
 						type="button"
-						on:click={() => toggleTag(tag.name)}
-						class="px-3 py-1 rounded-full text-sm {selectedTags.includes(tag.name)
-							? 'bg-blue-500 text-white'
-							: 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'} hover:shadow transition-all"
+						on:click={handleCreateTag}
+						disabled={isCreatingTag || !newTagName.trim()}
+						class="px-2 py-1 text-xs bg-green-500 text-white rounded-full hover:bg-green-600 disabled:opacity-50"
 					>
-						{tag.name}
+						{isCreatingTag ? '...' : '✓'}
 					</button>
-				{/each}
-			</div>
+					<button
+						type="button"
+						on:click={() => {
+							showTagInput = false;
+							newTagName = '';
+						}}
+						class="px-2 py-1 text-xs bg-red-500 text-white rounded-full hover:bg-red-600"
+					>
+						✕
+					</button>
+				</div>
+			{:else}
+				<button
+					type="button"
+					on:click={() => (showTagInput = true)}
+					class="px-3 py-1 rounded-full text-sm bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all border border-dashed border-gray-300 dark:border-gray-600"
+				>
+					+ Add Tag
+				</button>
+			{/if}
 		</div>
-	{/if}
+	</div>
 
 	<!-- Actions -->
 	<div class="flex gap-3 pt-2">
