@@ -93,11 +93,24 @@
 	}
 </script>
 
-<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-	<div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-hidden flex flex-col">
+<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+<div
+	class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+	on:click={handleClose}
+	on:keydown={(e) => e.key === 'Escape' && handleClose()}
+	role="presentation"
+>
+	<div
+		class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-hidden flex flex-col"
+		on:click|stopPropagation
+		on:keydown|stopPropagation
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="tag-manager-title"
+	>
 		<!-- Header -->
 		<div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-			<h2 class="text-xl font-bold text-gray-900 dark:text-white">Manage Tags</h2>
+			<h2 id="tag-manager-title" class="text-xl font-bold text-gray-900 dark:text-white">Manage Tags</h2>
 			<button
 				on:click={handleClose}
 				class="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
@@ -116,18 +129,22 @@
 				<h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">Create New Tag</h3>
 
 				<!-- Tag Name -->
-				<input
-					type="text"
-					bind:value={newTagName}
-					placeholder="Tag name"
-					class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-					on:keydown={(e) => e.key === 'Enter' && handleCreateTag()}
-				/>
+				<div>
+					<label for="tag-name-input" class="sr-only">Tag name</label>
+					<input
+						id="tag-name-input"
+						type="text"
+						bind:value={newTagName}
+						placeholder="Tag name"
+						class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+						on:keydown={(e) => e.key === 'Enter' && handleCreateTag()}
+					/>
+				</div>
 
 				<!-- Color Picker -->
-				<div>
-					<label class="block text-xs text-gray-600 dark:text-gray-400 mb-2">Color</label>
-					<div class="flex flex-wrap gap-2">
+				<fieldset>
+					<legend class="block text-xs text-gray-600 dark:text-gray-400 mb-2">Color</legend>
+					<div class="flex flex-wrap gap-2" role="group" aria-label="Tag color picker">
 						{#each colorPalette as color}
 							<button
 								type="button"
@@ -136,20 +153,22 @@
 									? 'border-gray-900 dark:border-white scale-110'
 									: 'border-gray-300 dark:border-gray-600 hover:scale-105'}"
 								style="background-color: {color.value}"
-								title={color.name}
-								aria-label={color.name}
+								aria-label="{color.name} color"
+								aria-pressed={newTagColor === color.value}
 							/>
 						{/each}
 					</div>
-				</div>
+				</fieldset>
 
 				<!-- Custom Color -->
 				<div class="flex items-center gap-2">
+					<label for="custom-color-input" class="sr-only">Custom color picker</label>
 					<input
+						id="custom-color-input"
 						type="color"
 						bind:value={newTagColor}
 						class="w-12 h-10 rounded cursor-pointer"
-						title="Custom color"
+						aria-label="Custom color picker"
 					/>
 					<span class="text-xs text-gray-500 dark:text-gray-400">Custom color</span>
 				</div>

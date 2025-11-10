@@ -289,13 +289,14 @@
 					<button
 						on:click={() => (showTagManager = true)}
 						class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-						title="Manage tags"
+						aria-label="Manage tags"
 					>
 						<svg
 							class="w-5 h-5 text-gray-600 dark:text-gray-400"
 							fill="none"
 							viewBox="0 0 24 24"
 							stroke="currentColor"
+							aria-hidden="true"
 						>
 							<path
 								stroke-linecap="round"
@@ -311,13 +312,14 @@
 						on:click={() => syncWithServer()}
 						disabled={$isSyncing || !$isOnline}
 						class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-						title="Sync now"
+						aria-label={$isSyncing ? 'Syncing with server...' : 'Sync with server'}
 					>
 						<svg
 							class="w-5 h-5 text-gray-600 dark:text-gray-400 {$isSyncing ? 'animate-spin' : ''}"
 							fill="none"
 							viewBox="0 0 24 24"
 							stroke="currentColor"
+							aria-hidden="true"
 						>
 							<path
 								stroke-linecap="round"
@@ -347,9 +349,11 @@
 			<div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow space-y-3">
 				<!-- Search -->
 				<div class="relative">
+					<label for="search-tasks" class="sr-only">Search tasks</label>
 					<input
+						id="search-tasks"
 						type="text"
-					bind:this={searchInput}
+						bind:this={searchInput}
 						bind:value={searchQuery}
 						placeholder="Search tasks..."
 						class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -359,6 +363,7 @@
 						fill="none"
 						viewBox="0 0 24 24"
 						stroke="currentColor"
+						aria-hidden="true"
 					>
 						<path
 							stroke-linecap="round"

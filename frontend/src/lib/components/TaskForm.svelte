@@ -159,11 +159,11 @@
 	</div>
 
 	<!-- Priority -->
-	<div>
-		<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+	<fieldset>
+		<legend class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
 			Priority
-		</label>
-		<div class="flex gap-2">
+		</legend>
+		<div class="flex gap-2" role="group" aria-label="Task priority">
 			{#each Object.values(TaskPriority).filter((v) => typeof v === 'number') as p}
 				<button
 					type="button"
@@ -171,19 +171,21 @@
 					class="flex-1 px-3 py-2 rounded-lg border {priority === p
 						? 'bg-blue-500 text-white border-blue-500'
 						: 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'} hover:shadow transition-all"
+					aria-label="{PRIORITY_LABELS[p]} priority"
+					aria-pressed={priority === p}
 				>
 					{PRIORITY_LABELS[p]}
 				</button>
 			{/each}
 		</div>
-	</div>
+	</fieldset>
 
 	<!-- Tags -->
-	<div>
-		<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+	<fieldset>
+		<legend class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
 			Tags
-		</label>
-		<div class="flex flex-wrap gap-2">
+		</legend>
+		<div class="flex flex-wrap gap-2" role="group" aria-label="Task tags">
 			{#each $tags as tag}
 				<button
 					type="button"
@@ -191,6 +193,8 @@
 					class="px-3 py-1 rounded-full text-sm {selectedTags.includes(tag.name)
 						? 'bg-blue-500 text-white'
 						: 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'} hover:shadow transition-all"
+					aria-label="{tag.name} tag"
+					aria-pressed={selectedTags.includes(tag.name)}
 				>
 					{tag.name}
 				</button>
@@ -199,7 +203,9 @@
 			<!-- Add new tag inline -->
 			{#if showTagInput}
 				<div class="flex items-center gap-1">
+					<label for="new-tag-input" class="sr-only">New tag name</label>
 					<input
+						id="new-tag-input"
 						type="text"
 						bind:value={newTagName}
 						placeholder="New tag"
@@ -214,13 +220,13 @@
 							}
 						}}
 						disabled={isCreatingTag}
-						autofocus
 					/>
 					<button
 						type="button"
 						on:click={handleCreateTag}
 						disabled={isCreatingTag || !newTagName.trim()}
 						class="px-2 py-1 text-xs bg-green-500 text-white rounded-full hover:bg-green-600 disabled:opacity-50"
+						aria-label="Create tag"
 					>
 						{isCreatingTag ? '...' : '✓'}
 					</button>
@@ -231,6 +237,7 @@
 							newTagName = '';
 						}}
 						class="px-2 py-1 text-xs bg-red-500 text-white rounded-full hover:bg-red-600"
+						aria-label="Cancel"
 					>
 						✕
 					</button>
@@ -240,12 +247,13 @@
 					type="button"
 					on:click={() => (showTagInput = true)}
 					class="px-3 py-1 rounded-full text-sm bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all border border-dashed border-gray-300 dark:border-gray-600"
+					aria-label="Add new tag"
 				>
 					+ Add Tag
 				</button>
 			{/if}
 		</div>
-	</div>
+	</fieldset>
 
 	<!-- Actions -->
 	<div class="flex gap-3 pt-2">

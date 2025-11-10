@@ -27,23 +27,30 @@
 
 {#if $showKeyboardHelp}
 	<!-- Backdrop -->
+	<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 	<div
 		class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
 		on:click={close}
+		on:keydown={(e) => e.key === 'Escape' && close()}
 		transition:fade={{ duration: 200 }}
+		role="presentation"
 	>
 		<!-- Modal -->
 		<div
 			class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden"
 			on:click|stopPropagation
+			on:keydown|stopPropagation
 			transition:scale={{ duration: 200, start: 0.95 }}
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="keyboard-help-title"
 		>
 			<!-- Header -->
 			<div
 				class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700"
 			>
 				<div>
-					<h2 class="text-2xl font-bold text-gray-900 dark:text-white">Keyboard Shortcuts</h2>
+					<h2 id="keyboard-help-title" class="text-2xl font-bold text-gray-900 dark:text-white">Keyboard Shortcuts</h2>
 					<p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
 						Speed up your workflow with these shortcuts
 					</p>
