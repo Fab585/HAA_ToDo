@@ -3,6 +3,7 @@
 	import TaskForm from '$lib/components/TaskForm.svelte';
 	import TaskItem from '$lib/components/TaskItem.svelte';
 	import TagManager from '$lib/components/TagManager.svelte';
+	import KeyboardHelp from '$lib/components/KeyboardHelp.svelte';
 	import {
 		tasks,
 		incompleteTasks,
@@ -19,6 +20,11 @@
 		syncWithServer,
 		cleanup
 	} from '$lib/stores/sync';
+	import {
+		registerShortcut,
+		showKeyboardHelp,
+		initKeyboardShortcuts
+	} from '$lib/stores/keyboard';
 	import type { Task } from '$lib/types/task';
 
 	let showCreateForm = false;
@@ -27,6 +33,7 @@
 	let filter: 'all' | 'active' | 'completed' = 'active';
 	let searchQuery = '';
 	let loading = true;
+	let searchInput: HTMLInputElement;
 
 	// Initialize on mount
 	onMount(async () => {
@@ -38,6 +45,125 @@
 		} finally {
 			loading = false;
 		}
+
+		// Initialize keyboard shortcuts
+		const unregisterKeyboardListener = initKeyboardShortcuts();
+
+		// Register application shortcuts
+		const unregisterShortcuts = [
+			registerShortcut({
+				key: '/',
+				description: 'Quick add new task',
+				action: () => {
+					if (!showCreateForm && !editingTask) {
+						showCreateForm = true;
+					}
+				}
+			}),
+			registerShortcut({
+				key: 'n',
+				description: 'Create new task',
+				action: () => {
+					if (!showCreateForm && !editingTask) {
+						showCreateForm = true;
+					}
+				}
+			}),
+			registerShortcut({
+				key: 'Escape',
+				description: 'Close modal or form',
+				action: () => {
+					if (showCreateForm) {
+						showCreateForm = false;
+					} else if (editingTask) {
+						editingTask = null;
+					} else if (showTagManager) {
+						showTagManager = false;
+					} else if ($showKeyboardHelp) {
+						showKeyboardHelp.set(false);
+					}
+				}
+			}),
+			registerShortcut({
+				key: '?',
+				description: 'Show keyboard shortcuts',
+				action: () => {
+					showKeyboardHelp.set(true);
+				}
+			}),
+			registerShortcut({
+				key: 's',
+				ctrl: true,
+				description: 'Sync with server',
+				action: () => {
+					if ($isOnline && !$isSyncing) {
+						syncWithServer();
+					}
+				}
+			}),
+			registerShortcut({
+				key: 's',
+				meta: true,
+				description: 'Sync with server',
+				action: () => {
+					if ($isOnline && !$isSyncing) {
+						syncWithServer();
+					}
+				}
+			}),
+			registerShortcut({
+				key: 'k',
+				ctrl: true,
+				description: 'Focus search',
+				action: () => {
+					searchInput?.focus();
+				}
+			}),
+			registerShortcut({
+				key: 'k',
+				meta: true,
+				description: 'Focus search',
+				action: () => {
+					searchInput?.focus();
+				}
+			}),
+			registerShortcut({
+				key: 't',
+				description: 'Open tag manager',
+				action: () => {
+					if (!showTagManager) {
+						showTagManager = true;
+					}
+				}
+			}),
+			registerShortcut({
+				key: '1',
+				description: 'Show active tasks',
+				action: () => {
+					filter = 'active';
+				}
+			}),
+			registerShortcut({
+				key: '2',
+				description: 'Show completed tasks',
+				action: () => {
+					filter = 'completed';
+				}
+			}),
+			registerShortcut({
+				key: '3',
+				description: 'Show all tasks',
+				action: () => {
+					filter = 'all';
+				}
+			})
+		];
+
+		// Cleanup on unmount
+		return () => {
+			unregisterKeyboardListener();
+			unregisterShortcuts.forEach((unregister) => unregister());
+		};
 	});
 
 	onDestroy(() => {
@@ -223,6 +349,7 @@
 				<div class="relative">
 					<input
 						type="text"
+					bind:this={searchInput}
 						bind:value={searchQuery}
 						placeholder="Search tasks..."
 						class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -341,3 +468,6 @@
 {#if showTagManager}
 	<TagManager on:close={() => (showTagManager = false)} on:tagCreated={() => {}} />
 {/if}
+
+<!-- Keyboard Shortcuts Help -->
+<KeyboardHelp />
