@@ -1,0 +1,90 @@
+# HABoard .gitignore
+
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual Environments
+venv/
+env/
+ENV/
+.venv
+
+# Build outputs
+dist/
+build/
+*.egg-info/
+.svelte-kit/
+.vercel/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# PostgreSQL
+*.sql.backup
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+coverage/
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Home Assistant
+home-assistant.log
+home-assistant_v2.db
+deps/
+tts/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Secrets
+secrets.yaml
+secrets.json
+*.key
+*.pem
+*.cert
+
+# Generated files
+types.generated.ts
+openapi.json
+
+# Media uploads (for development; in production use /media)
+media/haboard/
+
+# Service Worker
+service-worker.js.map
