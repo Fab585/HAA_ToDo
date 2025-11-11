@@ -2,12 +2,14 @@
 
 > **A mobile/tablet-first, offline-capable, context-aware to‑do app deeply integrated with Home Assistant**
 
-[![Status](https://img.shields.io/badge/status-feature%20complete%20(92%25)-success)]()
+[![Status](https://img.shields.io/badge/status-v0.1.0%20released-success)]()
 [![License](https://img.shields.io/badge/license-MIT-green)]()
-[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-native-blue)]()
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.1+-blue)]()
 [![Bundle Size](https://img.shields.io/badge/bundle%20size-45KB%20gzipped-success)]()
+[![Tests](https://img.shields.io/badge/tests-106%20passing-success)]()
+[![Accessibility](https://img.shields.io/badge/WCAG%202.1-compliant-success)]()
 
-> 🎉 **MVP Feature Complete!** All core features implemented and tested. Ready for HACS deployment and integration testing.
+> 🎉 **v0.1.0 Released!** Production-ready MVP with 106 passing tests, WCAG 2.1 accessibility, and comprehensive offline support. Ready for beta testing!
 
 ---
 
