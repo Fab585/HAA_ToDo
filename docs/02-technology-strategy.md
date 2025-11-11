@@ -13,7 +13,7 @@ This is the **definitive tech plan** for the HA‑integrated to‑do app, mergin
 **Key shifts vs. earlier draft:**
 
 1. **Simplified architecture (2‑layer):** App talks **directly to the HA custom integration** (REST + WS). The optional FastAPI add‑on is deferred until multi‑home/cloud sync.
-2. **Database:** **PostgreSQL** as the primary datastore for concurrency & LISTEN/NOTIFY. SQLite remains supported as a fallback, but not the default.
+2. **Database:** **SQLite** as the primary datastore for MVP/Beta (simplicity, zero setup). PostgreSQL available as optional upgrade for V1.0+ (LISTEN/NOTIFY, advanced concurrency).
 3. **Offline & conflict safety:** Vector clocks + per‑field merge strategies; CRDT/line‑merge for notes; tombstones for tag removals.
 4. **Notifications:** **Web Push** as primary channel with **HA Companion** fallback; **local scheduling** in Service Worker.
 5. **Performance & observability:** Strict budgets in CI, four validation spikes, and full metrics/tracing.
@@ -50,19 +50,44 @@ This is the **definitive tech plan** for the HA‑integrated to‑do app, mergin
 
 ## 3) Data Layer & Database
 
-### 3.1 Primary: PostgreSQL
+**STRATEGY CHANGE:** SQLite is now the **primary database** for MVP and Beta.
 
-* **Why:** MVCC concurrency, **LISTEN/NOTIFY** for sub‑200 ms realtime fan‑out, robust FTS, JSON, and migration tooling.
-* **Config (home‑scale):** `max_connections=20`, `shared_buffers=128MB`, `work_mem=4MB`.
+### 3.1 PRIMARY (MVP → Beta): SQLite 3.35+
+
+* **Why SQLite First:**
+  - **Simplicity:** Zero setup; ships with HA; no external dependencies
+  - **Performance:** Fast enough for home use (< 10 devices, < 10k tasks)
+  - **Reliability:** Battle-tested; WAL mode handles concurrent readers + single writer
+  - **FTS5:** Built-in full-text search (good enough for MVP)
+  - **Lower barrier:** Most HA users on Raspberry Pi; PostgreSQL adds complexity
+
+* **Configuration:**
+  - **WAL mode** (`PRAGMA journal_mode=WAL`) for concurrent reads during writes
+  - **FTS5 virtual table** for full-text search on `title`, `notes`, `tags`
+  - **Proper indexes:** `idx_tasks_due_date`, `idx_tasks_board_id`, `idx_tasks_completed`
+  - **Connection pooling:** Single writer connection + multiple reader connections
+
+* **Performance Targets:**
+  - Search (FTS5): < 200ms on 1k tasks
+  - Sync latency: < 2s for task CRUD (polling-based)
+  - Bulk operations: < 10s for 100 tasks
+
+### 3.2 OPTIONAL UPGRADE (V1.0+): PostgreSQL 14+
+
+**Available as opt-in for power users who need:**
+- **LISTEN/NOTIFY:** Sub-500ms realtime sync (vs 30s polling with SQLite)
+- **Concurrent writes:** Multiple devices writing simultaneously
+- **Advanced FTS:** `pg_trgm` for fuzzy prefix search
+- **Scalability:** > 10 devices or > 10k tasks
+
+* **Migration path:** Automatic export/import tool (see Canvas 4: Migration Strategy)
+* **Config (home‑scale):** `max_connections=20`, `shared_buffers=128MB`, `work_mem=4MB`
 * **Features:**
+  - FTS via `tsvector` initially; optional **pg_trgm** for prefix search
+  - **LISTEN/NOTIFY** channel `haboard_updates` with payload deltas (task ID, changed fields, clocks)
+  - Optional **pg_cron** for periodic jobs (recurrence, cleanups)
 
-  * FTS via `tsvector` initially; can add **pg_trgm** for prefix search.
-  * **LISTEN/NOTIFY** channel `haboard_updates` with payload deltas (task ID, changed fields, clocks).
-  * Optional **pg_cron** for periodic jobs (recurrence, cleanups).
-
-### 3.2 Fallback: SQLite
-
-* Supported for minimal setups; WAL mode; caution with concurrent writes.
+**Backward compatibility:** SQLite remains supported indefinitely; no forced migration.
 
 ### 3.3 Schema Highlights
 
@@ -73,17 +98,31 @@ This is the **definitive tech plan** for the HA‑integrated to‑do app, mergin
 
 ## 4) Sync, Offline & Conflict Resolution (US‑25/26)
 
-### 4.1 Vector Clocks & Merge
+### 4.1 Conflict Resolution Strategy (Phased Approach)
 
-* Store per‑task **vector clocks** (`{device_id: counter}`) to detect concurrency.
+**MVP (Hybrid LWW + Simple CRDT):**
+* **Philosophy:** Start simple; add sophistication based on real user pain
+* **Approach:** Last-Write-Wins for most fields + special rules for critical fields
 * **Per‑field strategies:**
+  - `title`, `description/notes`, `due`, `priority` → **Last-Write-Wins** (timestamp + device_id tie-break)
+  - `completed` → **TRUE always wins** (once done, stays done; store `completed_at`, `completed_by`)
+  - `tags` → **Set union** (merge both sets; no data loss)
+* **Conflict notification:** Toast message: "⚠️ Merged changes from [device name]"
+* **Data stored:** `modified_at` (timestamp), `device_id`, `completed_at`
 
-  * `title` → conflict UI if concurrent (user choice)
-  * `description/notes` → **CRDT text** (Automerge) or pragmatic **line‑merge** with diff banner
-  * `due`, `priority`, `assignee` → latest timestamp wins (tie‑break by device ID)
-  * `completed` → **TRUE wins** (append‑only event with `completed_at`, `completed_by`)
-  * `tags` → **set union** with tombstones for removals
-  * `subtasks` → array CRDT (append + tombstones)
+**Beta (Add Vector Clocks):**
+* Store per‑task **vector clocks** (`{device_id: counter}`) to detect true concurrency
+* **Enhanced per‑field strategies:**
+  - `title` → conflict UI if concurrent (show both versions, user chooses)
+  - `description/notes` → **Line-based merge** with diff banner (or Automerge CRDT if needed)
+  - `due`, `priority`, `assignee` → latest by vector clock (not just timestamp)
+  - `completed` → **TRUE wins** (unchanged from MVP)
+  - `tags` → **set union with tombstones** for removals
+  - `subtasks` → array CRDT (append + tombstones)
+
+**V1.0 (Full CRDT for Notes):**
+* Optional: Integrate **Automerge** or **Yjs** for collaborative text editing in notes
+* Only if user feedback indicates need (e.g., families editing grocery lists together)
 
 ### 4.2 Client Outbox & Optimism
 
@@ -174,9 +213,14 @@ This is the **definitive tech plan** for the HA‑integrated to‑do app, mergin
 
 ## 11) Search & Indexing (US‑20)
 
-* PostgreSQL FTS (tsvector) over title/notes/tags/assignee; optional pg_trgm for prefix.
-* Materialised views/indexes for common filters (overdue, today, mine, tags).
-* **Target:** results **< 200 ms** on low‑end hardware; benchmarked in CI.
+**MVP/Beta: SQLite FTS5**
+* FTS5 virtual table over `title`, `notes`, `tags` with BM25 ranking
+* Proper indexes for common filters: `idx_tasks_due_date`, `idx_tasks_board_id`, `idx_tasks_completed`
+* **Target:** results **< 200 ms** on 1k tasks on low‑end hardware (Raspberry Pi 4); benchmarked in CI
+
+**V1.0+: PostgreSQL FTS (if upgraded)**
+* PostgreSQL FTS (`tsvector`) over title/notes/tags/assignee; optional `pg_trgm` for prefix
+* Materialised views/indexes for common filters (overdue, today, mine, tags)
 
 ---
 
@@ -236,7 +280,202 @@ This is the **definitive tech plan** for the HA‑integrated to‑do app, mergin
 
 ---
 
-## 18) Tickets (Ready‑to‑Make)
+## 18) Security by Design
+
+**Philosophy:** Security must be designed in from Day 1, not audited in at Week 47-48.
+
+### Threat Model
+
+**What we're protecting:**
+- User task data (private, sensitive)
+- User credentials (HA access tokens)
+- System integrity (prevent unauthorized actions)
+
+**Threat actors:**
+- **Malicious users:** On same HA instance (multi-user households)
+- **Network attackers:** On local network (ARP spoofing, MITM)
+- **Web attackers:** Cross-site attacks (XSS, CSRF)
+- **Supply chain:** Compromised dependencies
+
+**Out of scope (HA's responsibility):**
+- TLS certificate management (HA handles HTTPS)
+- User authentication (HA provides tokens)
+- Network security (firewall, VPN)
+
+### Authentication & Authorization
+
+**MVP:**
+- **Authentication:** Use HA's existing auth system
+  - Frontend receives HA long-lived access token from localStorage
+  - API validates token via HA's `homeassistant.auth` module
+  - WebSocket authenticates via token in connection message
+- **Authorization:** Single-user model (no per-board permissions yet)
+  - All authenticated users can access all tasks
+  - Defer to Beta: board-level permissions
+
+**Beta:**
+- **Authorization:** Per-board access control
+  - Board members only see their boards
+  - Check board membership on every API call
+  - WebSocket subscriptions filtered by board membership
+
+**V1.0:**
+- **Authorization:** Role-based access control (RBAC)
+  - Viewer, Commenter, Editor roles per board
+  - API enforces permissions: `if user_role < required_role: raise Forbidden`
+
+### Input Validation & Sanitization
+
+**All inputs MUST be validated:**
+
+| Input | Validation | Sanitization |
+|-------|-----------|--------------|
+| **Task title** | Max 500 chars; no null bytes | HTML escape (prevent XSS) |
+| **Task notes** | Max 10k chars; markdown only | DOMPurify on frontend; bleach on backend |
+| **Due date** | ISO 8601 format; <= 10 years future | Parse with datetime.fromisoformat |
+| **Tag name** | Max 50 chars; alphanumeric + spaces | Strip HTML; lowercase |
+| **Search query** | Max 200 chars | FTS5 handles SQL injection; escape special chars |
+
+**Implementation:**
+- **Backend:** Pydantic models with validators
+- **Frontend:** Zod schemas + DOMPurify for markdown rendering
+
+### SQL Injection Prevention
+
+**Strategy:** Parameterized queries ONLY
+
+```python
+# ✅ GOOD: Parameterized query
+cursor.execute(
+    "SELECT * FROM tasks WHERE id = ?",
+    (task_id,)
+)
+
+# ❌ BAD: String interpolation (NEVER DO THIS)
+cursor.execute(f"SELECT * FROM tasks WHERE id = '{task_id}'")
+```
+
+**Enforcement:**
+- CI: Run `bandit` (Python security linter)
+- Code review: Check all SQL queries use parameters
+- FTS5: Use bind parameters for user input
+
+### XSS Prevention
+
+**Strategy:** Output encoding + Content Security Policy
+
+**Output Encoding:**
+- **Frontend:** DOMPurify for markdown rendering
+- **React-style:** Svelte auto-escapes by default (`{title}`)
+- **Unsafe HTML:** Only via `{@html}` with sanitized input
+
+**Content Security Policy (CSP):**
+```http
+Content-Security-Policy:
+  default-src 'self';
+  script-src 'self' 'wasm-unsafe-eval';
+  style-src 'self' 'unsafe-inline';
+  img-src 'self' data: https:;
+  connect-src 'self' ws: wss:;
+  font-src 'self';
+  object-src 'none';
+  base-uri 'self';
+  form-action 'self';
+  frame-ancestors 'none';
+```
+
+**Implementation:**
+- HA integration sets CSP headers on `/api/haboard/frontend/*`
+- CI: Test CSP with https://csp-evaluator.withgoogle.com
+
+### CSRF Protection
+
+**Strategy:** SameSite cookies + token validation
+
+**For State-Changing Requests:**
+- HA access token in `Authorization: Bearer <token>` header
+- Validates on server side
+- SameSite=Strict cookie policy (HA default)
+
+**For WebSocket:**
+- Token in connection message
+- Server validates before accepting subscription
+
+### Rate Limiting
+
+**Strategy:** Per-user rate limits to prevent abuse
+
+| Endpoint | Limit | Window | Reason |
+|----------|-------|--------|--------|
+| `POST /tasks` | 100 | 1 minute | Prevent spam |
+| `POST /tasks/search` | 60 | 1 minute | Prevent DoS via FTS |
+| `POST /tags` | 20 | 1 minute | Tags created rarely |
+| `WS /ws` | 1 connection | per device | Prevent resource exhaustion |
+
+**Implementation:**
+- Python: `slowapi` or custom decorator with Redis/in-memory cache
+- Return `429 Too Many Requests` with `Retry-After` header
+
+### Dependency Security
+
+**Strategy:** Automated scanning + manual review
+
+**CI Checks:**
+- **Python:** `safety check` (checks requirements.txt against CVE database)
+- **JavaScript:** `npm audit` (checks package-lock.json)
+- **GitHub:** Dependabot alerts enabled
+- **Fail build:** If any HIGH or CRITICAL vulnerabilities
+
+**Manual Review:**
+- Before adding new dependency, check:
+  - Last updated date (< 1 year old preferred)
+  - GitHub stars (> 500 for critical deps)
+  - Known vulnerabilities (search "npm <package> vulnerability")
+  - License compatibility (MIT, Apache 2.0, BSD)
+
+### Data Protection
+
+**At Rest:**
+- SQLite file: Protected by HA's file permissions (only `homeassistant` user)
+- No encryption at rest (HA's responsibility if needed)
+
+**In Transit:**
+- HTTPS: HA handles TLS termination
+- WebSocket: WSS (secure WebSocket) on production
+- Local dev: WS acceptable (localhost only)
+
+**Logging:**
+- NEVER log tokens, passwords, or sensitive data
+- Log task IDs, not task content
+- Use `structlog` with scrubber for PII
+
+### Security Checklist (Week 47-48)
+
+**OWASP Top 10 Review:**
+- [ ] A01: Broken Access Control → Board-level RBAC
+- [ ] A02: Cryptographic Failures → HA handles TLS
+- [ ] A03: Injection → Parameterized queries + input validation
+- [ ] A04: Insecure Design → Threat model documented
+- [ ] A05: Security Misconfiguration → CSP + rate limiting
+- [ ] A06: Vulnerable Components → CI scanning
+- [ ] A07: Authentication Failures → HA auth system
+- [ ] A08: Data Integrity Failures → Vector clocks + signatures
+- [ ] A09: Logging Failures → Structlog + PII scrubbing
+- [ ] A10: SSRF → No external fetches in MVP
+
+**Penetration Testing:**
+- [ ] Run OWASP ZAP automated scan
+- [ ] Manual testing: XSS, CSRF, SQL injection attempts
+- [ ] Test rate limiting with load generator
+- [ ] Verify CSP with browser dev tools
+
+**Security Audit (External):**
+- [ ] If budget allows: Hire security firm for 1-week audit
+- [ ] If not: Community review via HA forums + bug bounty
+
+---
+
+## 19) Tickets (Ready‑to‑Make)
 
 * **FE‑01** Svelte Query + WS invalidation; stale resolves ≤500 ms post‑event.
 * **FE‑02** Swipe triage gestures + haptics; 5 s undo toast.
@@ -251,12 +490,12 @@ This is the **definitive tech plan** for the HA‑integrated to‑do app, mergin
 
 ---
 
-## 19) Summary: Optimised Stack (At‑a‑glance)
+## 20) Summary: Optimised Stack (At‑a‑glance)
 
 | Layer              | Final Choice                                      | Why                                              |
 | ------------------ | ------------------------------------------------- | ------------------------------------------------ |
 | **Architecture**   | 2‑layer (App ⇄ Integration)                       | Lower latency, simpler ops, fewer failure points |
-| **Database**       | **PostgreSQL** (SQLite fallback)                  | Concurrency, LISTEN/NOTIFY, FTS, future‑proof    |
+| **Database**       | **SQLite** (PostgreSQL opt-in upgrade)            | Zero setup, WAL mode, FTS5, Pi-friendly          |
 | **Sync/Conflicts** | Vector clocks + per‑field merges                  | Data‑safe family collaboration                   |
 | **Notifications**  | **Web Push** + Companion fallback + SW scheduling | Reliable, fast, offline‑capable                  |
 | **Frontend**       | **SvelteKit + Tailwind + Motion One**             | Mobile/kiosk perf, PWA ergonomics                |

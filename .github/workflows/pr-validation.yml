@@ -1,0 +1,87 @@
+name: Pull Request Validation
+
+on:
+  pull_request:
+    branches: ["main", "develop"]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  validate:
+    name: PR Validation Gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check PR title format
+        run: |
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          echo "PR Title: $PR_TITLE"
+
+          # Check if title follows conventional commits format
+          if [[ ! "$PR_TITLE" =~ ^(feat|fix|docs|style|refactor|perf|test|chore|ci)(\(.+\))?:\ .+ ]]; then
+            echo "❌ PR title must follow conventional commits format:"
+            echo "   feat: Add new feature"
+            echo "   fix: Fix bug"
+            echo "   docs: Update documentation"
+            echo "   etc."
+            exit 1
+          fi
+          echo "✅ PR title format is valid"
+
+      - name: Check for changelog entry
+        if: github.base_ref == 'main'
+        run: |
+          # Skip this check during initial development (Week 0-2)
+          echo "⚠️  Changelog check skipped during early development"
+          # TODO: Uncomment after MVP
+          # if ! git diff --name-only origin/main...HEAD | grep -q "CHANGELOG.md"; then
+          #   echo "❌ Please add a CHANGELOG.md entry for main branch PRs"
+          #   exit 1
+          # fi
+
+  size-check:
+    name: PR Size Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check PR size
+        run: |
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | wc -l)
+          ADDITIONS=$(git diff --shortstat origin/${{ github.base_ref }}...HEAD | grep -oP '\d+(?= insertion)' || echo 0)
+          DELETIONS=$(git diff --shortstat origin/${{ github.base_ref }}...HEAD | grep -oP '\d+(?= deletion)' || echo 0)
+
+          echo "Changed files: $CHANGED_FILES"
+          echo "Additions: $ADDITIONS"
+          echo "Deletions: $DELETIONS"
+
+          # Warn on large PRs (>500 lines changed)
+          TOTAL_CHANGES=$((ADDITIONS + DELETIONS))
+          if [ $TOTAL_CHANGES -gt 500 ]; then
+            echo "⚠️  Large PR detected: $TOTAL_CHANGES lines changed"
+            echo "Consider breaking this into smaller PRs for easier review"
+          else
+            echo "✅ PR size is reasonable"
+          fi
+
+  branch-check:
+    name: Branch Protection Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check branch name
+        run: |
+          BRANCH_NAME="${{ github.head_ref }}"
+          echo "Branch name: $BRANCH_NAME"
+
+          # Ensure branch follows naming convention
+          if [[ "$BRANCH_NAME" =~ ^(feature|fix|docs|refactor|test|chore|claude)/.+ ]]; then
+            echo "✅ Branch name follows convention"
+          else
+            echo "⚠️  Branch name should follow pattern: feature/*, fix/*, docs/*, etc."
+            echo "   Examples: feature/add-task-sync, fix/search-bug, docs/readme-update"
+            echo "   Note: claude/* branches are allowed for AI-assisted development"
+          fi

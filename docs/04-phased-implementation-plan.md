@@ -22,43 +22,422 @@ Each phase delivers **real user value** and validates assumptions before buildin
 
 | Phase | Timeline | Focus | Key Question |
 |-------|----------|-------|--------------|
-| **MVP (v0.1)** | 2-3 months | Core task management + basic HA | "Does this concept work?" |
-| **Beta (v0.5)** | 4-6 months | Daily driver + key differentiators | "Is this useful daily?" |
-| **V1.0** | 9-12 months | Feature complete + collaboration | "Is this production ready?" |
+| **MVP (v0.1)** | 6-8 weeks | Core task management + basic HA | "Does this concept work?" |
+| **Beta (v0.5)** | +14 weeks (4-6 months total) | Daily driver + key differentiators | "Is this useful daily?" |
+| **V1.0** | +32 weeks (9-12 months total) | Feature complete + collaboration | "Is this production ready?" |
 | **V2.0+** | 12+ months | Advanced features + ML | "What's next?" |
+
+---
+
+## 🗓️ Complete Timeline: Zero to V1.0 Public Release
+
+### **Phase 0: Validation Spikes (Weeks 1-2)**
+- Run 4 critical experiments to validate unknowns
+- Gate: All spikes must pass before MVP development
+
+### **Phase 1: MVP Development (Weeks 3-10)**
+- **Week 1-2:** Foundation + validation spikes
+- **Week 3-4:** Backend + sync
+- **Week 5-6:** Frontend core + offline
+- **Week 7-8:** Features + polish
+- **Week 9-10:** MVP testing with 5-10 pilot users
+- **Deliverable:** Working offline-first task app with basic HA integration
+
+### **Phase 2: Beta Development (Weeks 11-24)**
+- **Week 11-12:** Shared boards foundation
+- **Week 13-14:** Vector clocks + conflict resolution
+- **Week 15-16:** Kiosk mode
+- **Week 17-18:** Voice via Assist
+- **Week 19-20:** Presence awareness + smart digests
+- **Week 21-22:** Lovelace card + polish
+- **Week 23-24:** Beta testing with 20-50 users
+- **Deliverable:** Daily driver quality with kiosk, voice, presence
+
+### **Phase 3: V1.0 Development (Weeks 25-56)**
+- **Week 25-26:** Calendar integration
+- **Week 27-28:** Time blocking
+- **Week 29-30:** Smart suggestions
+- **Week 31-32:** Sensor-triggered tasks
+- **Week 33-34:** Device completion + zones
+- **Week 35-36:** Advanced collaboration
+- **Week 37-38:** Board sections
+- **Week 39-40:** Weekly planning ritual
+- **Week 41-42:** Grocery & errands flow
+- **Week 43-44:** Accessibility (WCAG AAA)
+- **Week 45-46:** Internationalization
+- **Week 47-48:** Security audit + polish
+- **Week 49-50:** Performance optimization
+- **Week 51-52:** Beta testing (100+ users)
+- **Week 53-54:** Production hardening
+- **Week 55-56:** Public release 🚀
+- **Deliverable:** Production-ready, feature-complete, 500+ users
+
+### **Total Timeline: 56 weeks (~13 months)**
+
+**Critical Path Dependencies:**
+- Validation spikes → MVP → Beta → V1.0
+- Each phase has Go/No-Go gate (can extend if not met)
+- User feedback loops inform next phase planning
+
+**Staffing Requirements:**
+- **Weeks 1-10 (MVP):** 1 full-stack developer
+- **Weeks 11-24 (Beta):** 1-2 full-stack developers
+- **Weeks 25-56 (V1.0):** 2 full-stack developers + part-time UX/QA
+
+**Flexibility:**
+- Each phase can extend if success metrics not met
+- Features can be deferred based on user feedback
+- Timeline assumes no major blockers or pivots
+
+---
+
+## 🛠️ Week 0: Infrastructure & Distribution Setup (CRITICAL)
+
+**Timeline:** 3-5 days before Week 1
+**Goal:** Set up development infrastructure and distribution strategy
+
+### Repository Structure
+
+```
+haboard/
+├── custom_components/
+│   └── haboard/                    # HA integration (Python)
+│       ├── __init__.py             # Integration entry point
+│       ├── manifest.json           # HA integration manifest
+│       ├── config_flow.py          # Setup UI
+│       ├── api.py                  # REST API (aiohttp views)
+│       ├── websocket.py            # WebSocket handler
+│       ├── database.py             # SQLite wrapper
+│       └── frontend/               # PWA static files (served by aiohttp)
+│           ├── index.html
+│           ├── assets/
+│           └── manifest.webmanifest
+├── frontend/                       # SvelteKit source code
+│   ├── src/
+│   ├── svelte.config.js
+│   └── package.json
+├── hacs.json                       # HACS metadata
+├── .github/
+│   └── workflows/
+│       ├── ci.yml                  # Lint, test, build
+│       └── release.yml             # Automated releases
+├── README.md
+└── LICENSE
+```
+
+### Week 0 Checklist
+
+**Day 1: Repository & HACS Setup**
+- [ ] Create GitHub repository: `haboard`
+- [ ] Initialize monorepo structure (custom_components + frontend)
+- [ ] Create `hacs.json`:
+```json
+{
+  "name": "HABoard",
+  "render_readme": true,
+  "domains": ["todo", "calendar"],
+  "homeassistant": "2024.1.0"
+}
+```
+- [ ] Create `manifest.json` in `custom_components/haboard/`:
+```json
+{
+  "domain": "haboard",
+  "name": "HABoard",
+  "version": "0.0.1",
+  "documentation": "https://github.com/yourusername/haboard",
+  "issue_tracker": "https://github.com/yourusername/haboard/issues",
+  "codeowners": ["@yourusername"],
+  "requirements": [],
+  "dependencies": [],
+  "iot_class": "local_push"
+}
+```
+
+**Day 2: CI/CD Pipeline**
+- [ ] GitHub Actions workflow: Lint (Python: ruff, black; JS: eslint, prettier)
+- [ ] GitHub Actions workflow: Test (Python: pytest; JS: vitest)
+- [ ] GitHub Actions workflow: Build (SvelteKit build to custom_components/haboard/frontend/)
+- [ ] Bundle size enforcement: fail if >150KB gzipped
+- [ ] Lighthouse CI: fail if PWA score <90
+
+**Day 3: Development Environment**
+- [ ] `.devcontainer` for VS Code (optional but recommended)
+- [ ] `requirements.txt` for Python deps
+- [ ] `requirements-dev.txt` for dev/test deps (pytest, ruff, black)
+- [ ] `package.json` scripts: dev, build, test, lint
+- [ ] Git hooks: pre-commit (lint + test)
+- [ ] README: Development setup instructions
+
+**Day 4: Database Schema (Initial)**
+- [ ] Document initial SQLite schema (see Canvas 5 section below)
+- [ ] Tables: tasks, tags, task_tags
+- [ ] Indexes: idx_tasks_due_date, idx_tasks_completed
+- [ ] FTS5 virtual table for search
+
+**Day 5: HA Integration Skeleton**
+- [ ] `__init__.py`: Integration setup, async_setup_entry
+- [ ] `config_flow.py`: Basic configuration UI
+- [ ] Test: Install on your dev HA instance via custom_components
+- [ ] Verify: Integration shows up in Settings → Integrations
+
+### Distribution Strategy: HACS-First
+
+**Why HACS:**
+- ✅ Works on all HA installation types (Supervised, Container, Core, HAOS)
+- ✅ Git-based: Easy development workflow (git push → HACS update)
+- ✅ Single repo: Integration + frontend together
+- ✅ Community standard: 90% of custom integrations use HACS
+- ✅ Your dev setup already supports it
+
+**How it works:**
+1. HACS clones your repo to `custom_components/haboard/`
+2. User restarts HA
+3. Integration starts, registers aiohttp view: `/api/haboard/frontend/*`
+4. User navigates to `http://homeassistant.local:8123/api/haboard/frontend/`
+5. Integration serves your PWA (SvelteKit build output)
+6. PWA registers service worker, goes offline-capable
+7. PWA talks to REST API at `/api/haboard/tasks`
+
+**Development Workflow:**
+```bash
+# Terminal 1: Frontend dev server
+cd frontend
+npm run dev  # Hot reload on localhost:5173
+
+# Terminal 2: HA integration dev
+# Edit custom_components/haboard/*.py
+# HA auto-reloads integration on file change
+
+# When ready to test production build:
+cd frontend
+npm run build  # Outputs to custom_components/haboard/frontend/
+# Restart HA integration
+```
+
+**Publishing:**
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+# HACS auto-detects new release
+# Users click "Update" in HACS
+```
+
+**Optional: HA Addon (V1.0+)**
+- Can add later if users request it (survey after Beta)
+- For broader reach to non-HACS users
+- Effort: ~1 week in V1.0 phase
+
+---
+
+## 🗄️ Canvas 5: Database Schema & API Spec (Initial)
+
+**Note:** This is the initial schema for MVP. Will evolve in Beta/V1.0.
+
+### SQLite Schema (MVP)
+
+```sql
+-- Enable WAL mode for concurrent reads
+PRAGMA journal_mode=WAL;
+
+-- Tasks table
+CREATE TABLE tasks (
+    id TEXT PRIMARY KEY,                    -- UUID v7
+    title TEXT NOT NULL,
+    notes TEXT,
+    due_date TEXT,                          -- ISO 8601 (YYYY-MM-DD)
+    due_time TEXT,                          -- ISO 8601 (HH:MM:SS)
+    priority INTEGER DEFAULT 0,             -- 0=none, 1=low, 2=medium, 3=high
+    completed BOOLEAN DEFAULT 0,
+    completed_at TEXT,                      -- ISO 8601
+    modified_at TEXT NOT NULL,              -- ISO 8601
+    device_id TEXT NOT NULL,                -- Device that last modified
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tags table
+CREATE TABLE tags (
+    id TEXT PRIMARY KEY,
+    name TEXT UNIQUE NOT NULL,
+    color TEXT DEFAULT '#3b82f6'           -- Tailwind blue-500
+);
+
+-- Task-Tag association (many-to-many)
+CREATE TABLE task_tags (
+    task_id TEXT NOT NULL,
+    tag_id TEXT NOT NULL,
+    PRIMARY KEY (task_id, tag_id),
+    FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+    FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+);
+
+-- Indexes for performance
+CREATE INDEX idx_tasks_due_date ON tasks(due_date) WHERE completed = 0;
+CREATE INDEX idx_tasks_completed ON tasks(completed);
+CREATE INDEX idx_tasks_modified_at ON tasks(modified_at);
+
+-- Full-text search (FTS5)
+CREATE VIRTUAL TABLE tasks_fts USING fts5(
+    title,
+    notes,
+    content='tasks',
+    content_rowid='rowid'
+);
+
+-- Triggers to keep FTS in sync
+CREATE TRIGGER tasks_ai AFTER INSERT ON tasks BEGIN
+    INSERT INTO tasks_fts(rowid, title, notes)
+    VALUES (new.rowid, new.title, new.notes);
+END;
+
+CREATE TRIGGER tasks_ad AFTER DELETE ON tasks BEGIN
+    DELETE FROM tasks_fts WHERE rowid = old.rowid;
+END;
+
+CREATE TRIGGER tasks_au AFTER UPDATE ON tasks BEGIN
+    UPDATE tasks_fts SET title = new.title, notes = new.notes
+    WHERE rowid = new.rowid;
+END;
+```
+
+### REST API Endpoints (MVP)
+
+**Base URL:** `/api/haboard`
+
+| Method | Endpoint | Description | Request | Response |
+|--------|----------|-------------|---------|----------|
+| `GET` | `/tasks` | List all tasks | Query: `completed`, `since` | `Task[]` |
+| `POST` | `/tasks` | Create task | `CreateTaskRequest` | `Task` |
+| `GET` | `/tasks/{id}` | Get task | - | `Task` |
+| `PUT` | `/tasks/{id}` | Update task | `UpdateTaskRequest` | `Task` |
+| `DELETE` | `/tasks/{id}` | Delete task | - | `204 No Content` |
+| `POST` | `/tasks/{id}/complete` | Mark complete | - | `Task` |
+| `POST` | `/tasks/search` | Full-text search | `SearchRequest` | `Task[]` |
+| `GET` | `/tags` | List all tags | - | `Tag[]` |
+| `POST` | `/tags` | Create tag | `CreateTagRequest` | `Tag` |
+
+**Types (TypeScript):**
+```typescript
+interface Task {
+  id: string;
+  title: string;
+  notes: string | null;
+  due_date: string | null;      // ISO 8601 date
+  due_time: string | null;      // HH:MM:SS
+  priority: 0 | 1 | 2 | 3;
+  completed: boolean;
+  completed_at: string | null;
+  modified_at: string;
+  device_id: string;
+  created_at: string;
+  tags: Tag[];
+}
+
+interface Tag {
+  id: string;
+  name: string;
+  color: string;
+}
+
+interface CreateTaskRequest {
+  title: string;
+  notes?: string;
+  due_date?: string;
+  due_time?: string;
+  priority?: 0 | 1 | 2 | 3;
+  tag_ids?: string[];
+}
+
+interface UpdateTaskRequest {
+  title?: string;
+  notes?: string;
+  due_date?: string;
+  due_time?: string;
+  priority?: 0 | 1 | 2 | 3;
+  tag_ids?: string[];
+}
+
+interface SearchRequest {
+  query: string;
+  limit?: number;
+}
+```
+
+### WebSocket Protocol (MVP)
+
+**Connect:** `ws://homeassistant.local:8123/api/haboard/ws`
+
+**Messages:**
+
+```typescript
+// Client → Server: Subscribe to updates
+{
+  type: "subscribe",
+  device_id: "abc123"
+}
+
+// Server → Client: Task created/updated/deleted
+{
+  type: "task_updated",
+  task: Task,
+  device_id: "abc123"  // Which device made the change
+}
+
+{
+  type: "task_deleted",
+  task_id: "xyz789",
+  device_id: "abc123"
+}
+
+// Client → Server: Heartbeat (every 30s)
+{
+  type: "ping"
+}
+
+// Server → Client: Heartbeat response
+{
+  type: "pong"
+}
+```
 
 ---
 
 ## 🚀 MVP (v0.1) — "Prove the Concept"
 
-**Timeline:** 8-12 weeks
-**Goal:** Ship something useful that validates core value prop
+**Timeline:** 6-8 weeks *(reduced from 8-12 weeks via scope refinement)*
+**Goal:** Ship minimal viable product that validates offline-first + HA integration
 **Users:** 5-10 pilot testers (you + trusted HA community members)
 
-### User Stories Included
+### User Stories Included *(Reduced from 8 to 5 core stories)*
 
 | ID | Story | Why MVP | Complexity |
 |----|-------|---------|------------|
-| **US-1** | Quick Add (Natural Language) | Core value — fast capture | Medium |
-| **US-3** | Quick Capture from Anywhere | Core UX — always accessible | Low |
+| **US-1** | Quick Add (Natural Language - Optional) | Core value — fast capture | Medium |
 | **US-7** | One-Swipe Triage | Core UX — fast completion | Low |
-| **US-8** | Actionable Notifications (basic) | Mobile utility | Medium |
-| **US-11** | Assign to a Person | Family usefulness (basic) | Low |
 | **US-20** | Powerful Search | Essential for 50+ tasks | Medium |
 | **US-25** | Offline-First | Core differentiator | High |
 | **US-26** | Real-Time Sync (basic) | Core differentiator | High |
 
+### Deferred to Beta (Scope Reduction)
+
+| ID | Story | Why Deferred | Move to |
+|----|-------|--------------|---------|
+| **US-3** | Quick Capture from Anywhere | Keyboard shortcuts are polish | Beta |
+| **US-8** | Actionable Notifications | Basic notifications sufficient for MVP | Beta |
+| **US-11** | Assign to a Person | Family features belong with shared boards | Beta |
+
 ### Features Included
 
 #### ✅ Core Task Management
-- **Quick Add with NLP:** "Buy milk tomorrow 6pm #groceries" → parsed task
-  - Use `chrono` for dates/times
-  - Simple regex for `#tags`, `!priority`, `@assignee`
-  - Fallback to structured form if parsing fails
+- **Quick Add with OPTIONAL NLP:**
+  - **Primary:** Structured form (title, date picker, time picker, tags dropdown)
+  - **Optional Enhancement:** Parse natural language with `chrono` if present
+  - Philosophy: Don't overestimate NLP accuracy; let users choose input method
 - **CRUD Operations:** Create, read, update, delete tasks
-- **Basic fields:** Title, notes, due date/time, priority (none/low/medium/high), tags, assignee
+- **Basic fields:** Title, notes, due date/time, priority (none/low/medium/high), tags
 - **Swipe gestures:** Right to complete, left to snooze (presets only: 1h, 3h, tomorrow)
-- **Filters:** Today, Overdue, All, By Tag, By Assignee
+- **Filters:** Today, Overdue, All, By Tag
+- **NO assignee in MVP** — Single-user experience; family features in Beta
 
 #### ✅ Mobile PWA (Offline-Capable)
 - **SvelteKit PWA** with Service Worker
@@ -78,22 +457,31 @@ Each phase delivers **real user value** and validates assumptions before buildin
 - **REST API:** `/api/haboard/tasks` (CRUD endpoints)
 - **Basic WebSocket:** Subscribe to task updates
 
-#### ✅ Sync (Simplified)
-- **Database:** PostgreSQL (primary) OR SQLite (fallback) — pick one for MVP
-  - **Recommendation:** Start with SQLite for simplicity; migrate to PostgreSQL in Beta
-- **Conflict Resolution:** **Last-Write-Wins** (LWW) with timestamp
-  - Store `modified_at` + `modified_by_device_id`
-  - If conflict: latest timestamp wins
-  - Show toast: "⚠️ Conflict resolved: kept most recent version"
+#### ✅ Sync (Simplified for MVP)
+- **Database:** **SQLite ONLY** (WAL mode + FTS5)
+  - No PostgreSQL in MVP — reduces deployment complexity
+  - Migration to PostgreSQL planned for Beta if LISTEN/NOTIFY needed
+  - Optimize SQLite: proper indexes, query planning, FTS5 for search
+
+- **Conflict Resolution:** **Hybrid LWW + Simple CRDT**
+  - **Task metadata:** Last-Write-Wins with timestamp (title, notes, due, priority)
+  - **Task completion:** TRUE always wins (once done, stays done)
+  - **Tags:** Set union (no data loss on merge)
+  - **Why:** Prevents common family frustration (lost tasks) without full CRDT complexity
+  - Store: `modified_at` + `device_id` + `completed_at`
+  - Show toast on conflict: "⚠️ Merged changes from [device]"
+
 - **Sync Protocol:**
-  - Outbox pattern (IndexedDB queue)
-  - Retry with exponential backoff
-  - WebSocket for realtime push (with polling fallback)
+  - Outbox pattern (IndexedDB queue for offline writes)
+  - Retry with exponential backoff (2s, 4s, 8s, 16s)
+  - WebSocket for realtime push (with 30s polling fallback)
+  - Sync on app foreground + visibility change
 
 #### ✅ Notifications (Basic)
-- **Web Push** (primary) with action buttons (Complete, Snooze, Open)
-- **Timing:** Due-now reminders (at due time)
-- **Targeting:** Notify assignee only (no multi-device logic yet)
+- **Web Push** (primary) with single action button (Open)
+- **Timing:** Due-now reminders only (at due time, no digest yet)
+- **Targeting:** All devices (no assignee filtering in MVP)
+- **Defer to Beta:** Action buttons (Complete, Snooze), smart digests, assignee targeting
 
 #### ✅ Basic UI/UX
 - **Mobile-first design:**
@@ -141,43 +529,175 @@ Each phase delivers **real user value** and validates assumptions before buildin
 - Is LWW conflict resolution acceptable?
 - Do users want kiosk mode or is mobile enough?
 
+### Error Handling & Degradation (NEW)
+
+**Critical: Define fallback behaviors early to prevent user frustration**
+
+| Error Scenario | Degradation Strategy | User Experience |
+|----------------|---------------------|-----------------|
+| **WebSocket disconnects** | Fall back to 30s polling | Toast: "Syncing slower — reconnecting..." |
+| **IndexedDB quota exceeded** | Warn at 80%; offer to archive old completed tasks | Modal: "Storage almost full. Archive tasks?" |
+| **HA integration crashes** | Local-only mode; queue all changes | Banner: "Offline mode — changes will sync when server returns" |
+| **Network timeout** | Retry 4 times (2s, 4s, 8s, 16s); then local-only | No UI change; sync icon spins; toast on failure |
+| **Conflict resolution fails** | Show side-by-side diff; let user choose | Modal: "Both devices changed '[task title]'. Keep which version?" |
+| **Service Worker update fails** | Prompt user to refresh | Toast: "Update available. Refresh to get latest features." |
+
+**Recovery Mechanisms:**
+- **Auto-retry:** All network operations retry with exponential backoff
+- **Local-first:** App fully functional offline; sync when connection restored
+- **State reconciliation:** On reconnect, sync all outbox items before new operations
+- **Error logging:** Ship errors to HA logs (integration) + browser console (PWA)
+
+### Migration Strategy (NEW)
+
+**Zero-downtime upgrades between versions**
+
+#### MVP → Beta Migration (SQLite stays, schema changes)
+**Changes:**
+- Add `board_id`, `assignee_user_id` columns to tasks table
+- Add `boards` and `board_members` tables
+- Add `vector_clock` JSONB column for improved conflict resolution
+
+**Migration Process:**
+1. **Pre-migration check:** Validate SQLite file integrity
+2. **Backup:** Copy `haboard.db` to `haboard.db.backup-{timestamp}`
+3. **Schema upgrade:** Run `alembic upgrade head` (auto-applied by integration)
+4. **Data migration:**
+   - Create default "Personal" board for all existing tasks
+   - Set `vector_clock` = `{"device_id": modified_at}` (initialize from LWW)
+5. **Rollback plan:** If migration fails, restore from backup; integration stays at MVP version
+
+**User Impact:** Automatic on integration restart; no action required
+
+#### Beta → V1.0 Migration (Optional: SQLite → PostgreSQL)
+**Only if user wants PostgreSQL for LISTEN/NOTIFY performance**
+
+**Migration Process:**
+1. **User opts in:** Configuration UI in HA integration settings
+2. **Export SQLite to SQL dump:** `sqlite3 haboard.db .dump > export.sql`
+3. **Convert to PostgreSQL syntax:** Script handles type conversions
+4. **Import to PostgreSQL:** `psql < export-converted.sql`
+5. **Update integration config:** Point to PostgreSQL connection string
+6. **Validation:** Check row counts match; spot-check 10 tasks
+7. **Rollback plan:** Keep SQLite file; revert config if issues found
+
+**User Impact:** Opt-in only; requires PostgreSQL setup; 10-30 min downtime
+
+**Backward Compatibility Promise:**
+- Old PWA versions continue working with new integration (API versioned)
+- Integration auto-migrates database schema on upgrade
+- No breaking changes to WebSocket protocol within major versions
+
+### Testing Strategy (NEW)
+
+**5 Golden Paths (Must pass before release)**
+
+These critical flows must work flawlessly:
+
+1. **Offline Add → Sync → Complete**
+   - Open app (offline)
+   - Add task "Buy milk"
+   - Go online
+   - See task sync to server (< 2s)
+   - Complete task on different device
+   - Original device sees completion (< 2s)
+
+2. **Concurrent Edit → Conflict Resolution**
+   - Device A: Edit task title to "Buy whole milk" (offline)
+   - Device B: Edit same task title to "Buy oat milk" (offline)
+   - Both go online
+   - Verify conflict resolution (LWW with toast notification)
+   - No data loss (history preserved)
+
+3. **Voice Add → Notification → Swipe Complete**
+   - Say "Hey HA, add buy groceries to my todo list tomorrow 6pm"
+   - Verify task appears in PWA with correct due date
+   - Wait until tomorrow 6pm
+   - Receive Web Push notification
+   - Tap notification → opens app
+   - Swipe task right to complete
+
+4. **Search with 1000 Tasks**
+   - Import 1000 sample tasks
+   - Type search query: "milk"
+   - Results appear in < 200ms
+   - Verify FTS5 ranking (exact match ranks higher)
+
+5. **App Offline for 24h → Bulk Sync**
+   - Add 20 tasks offline over 24 hours
+   - Go online
+   - All 20 sync successfully (< 10s)
+   - Verify order preserved
+   - No duplicates
+
+**Test Coverage Targets:**
+- **Unit tests:** >80% coverage for business logic (sync, conflict resolution, NLP parsing)
+- **Integration tests:** All API endpoints + WebSocket messages
+- **E2E tests:** 5 golden paths (Playwright on mobile viewport)
+- **Performance tests:** Bundle size, TTI, sync latency benchmarked in CI
+- **Accessibility tests:** axe-core on all pages; keyboard navigation manual test
+
+**Test Execution:**
+- **Pre-commit:** Unit tests (< 5s)
+- **Pre-push:** Unit + integration tests (< 30s)
+- **CI (every push):** Full suite + performance + bundle size
+- **Weekly:** E2E on real devices (Android mid-range, iOS Safari, tablet)
+
 ### Technical Milestones (MVP)
 
-**Week 1-2: Foundation**
-- [ ] Repo setup (monorepo: `/custom_components/haboard`, `/frontend`)
-- [ ] CI/CD pipeline (GitHub Actions: lint, test, build)
-- [ ] Database schema (SQLite initial — tasks, boards, tags tables)
-- [ ] HA integration skeleton (manifest, config_flow, entities)
+**Week 1-2: Validation Spikes + Foundation**
 
-**Week 3-4: Backend**
-- [ ] REST API (FastAPI or aiohttp views in HA integration)
+**Prerequisites:**
+- ✅ Week 0 completed (infrastructure, HACS setup, schema documented)
+
+**Validation Spikes (Run these first):**
+- [ ] **Validation Spike 1:** Offline sync POC (IndexedDB + WebSocket)
+  - Test: 2 devices, add task offline, go online, sync in <2s
+  - Success: 10/10 syncs work; latency <2s
+- [ ] **Validation Spike 2:** NLP parsing quality (50 test phrases with chrono)
+  - Test phrases: "tomorrow 6pm", "next Tuesday", "in 2 hours", "every Friday"
+  - Success: >80% fully correct; <10% complete failures
+- [ ] **Validation Spike 3:** Bundle size check (SvelteKit minimal build)
+  - Build minimal app: SvelteKit + TailwindCSS + Tanstack Query
+  - Success: <100 KB gzipped (leaves margin for features)
+- [ ] **Validation Spike 4:** SQLite FTS5 performance (1k tasks, <200ms queries)
+  - Load 1000 sample tasks with FTS5 index
+  - Query: search for "milk"
+  - Success: p95 <200ms on Raspberry Pi 4
+- [ ] **Gate:** All spikes must pass before continuing to Week 3-4
+
+**If Spikes Pass:**
+- [ ] Install integration on your dev HA instance via HACS (custom repo)
+- [ ] Verify: Integration appears in Settings → Integrations
+- [ ] Verify: `/api/haboard/frontend/` serves static page
+- [ ] Document learnings from spikes (what worked, what didn't)
+
+**Week 3-4: Backend + Sync**
+- [ ] REST API (aiohttp views in HA integration)
 - [ ] CRUD endpoints with Pydantic validation
 - [ ] OpenAPI spec generation
-- [ ] Basic WebSocket (subscribe/broadcast pattern)
+- [ ] WebSocket with 30s polling fallback
+- [ ] Hybrid conflict resolution (LWW + completion-wins + tag-union)
+- [ ] Error handling (retry logic, local-only fallback)
 
-**Week 5-6: Frontend Foundation**
+**Week 5-6: Frontend Core + Offline**
 - [ ] SvelteKit scaffold + TailwindCSS
 - [ ] TypeScript types from OpenAPI (`openapi-typescript`)
 - [ ] Tanstack Query setup + WebSocket integration
-- [ ] IndexedDB wrapper + Outbox implementation
-
-**Week 7-8: Core Features**
-- [ ] Quick add with chrono NLP
-- [ ] Task list with filters (Today, Overdue, All)
-- [ ] Swipe gestures (@use-gesture/svelte)
-- [ ] Search (SQLite FTS5)
-
-**Week 9-10: Offline & Sync**
-- [ ] Service Worker + Workbox caching
-- [ ] Outbox retry logic
-- [ ] LWW conflict resolution
+- [ ] IndexedDB wrapper + Outbox pattern with retry
+- [ ] Service Worker + offline cache strategy
 - [ ] Optimistic UI updates
 
-**Week 11-12: Polish & Deploy**
-- [ ] Notifications (Web Push)
-- [ ] Settings screen (preferences, account)
-- [ ] E2E tests (Playwright: add → sync → complete)
+**Week 7-8: Features + Polish**
+- [ ] Quick add (structured form + optional chrono NLP)
+- [ ] Task list with filters (Today, Overdue, All, By Tag)
+- [ ] Swipe gestures with haptics (@use-gesture/svelte)
+- [ ] Search (SQLite FTS5)
+- [ ] Basic settings screen
+- [ ] Basic Web Push notifications (Open action only)
+- [ ] E2E tests for 5 golden paths (Playwright)
 - [ ] Deploy to pilot users (HA addon or manual install)
+- [ ] 2-week feedback cycle
 
 ---
 
@@ -265,6 +785,84 @@ Each phase delivers **real user value** and validates assumptions before buildin
 - Does voice via Assist work reliably?
 - Do presence-aware reminders add value or annoy?
 - What features are requested most?
+
+### Technical Milestones (Beta)
+
+**Prerequisites:**
+- ✅ MVP deployed and validated with 5+ pilot users
+- ✅ Go decision from MVP → Beta gate
+- ✅ 20+ beta testers recruited
+
+**Week 1-2: Shared Boards Foundation**
+- [ ] Database migration: Add `boards`, `board_members`, `assignee_user_id` columns
+- [ ] Migration script with rollback (see Migration Strategy section)
+- [ ] API endpoints: Board CRUD, member management
+- [ ] Frontend: Board selector, member invitation UI
+- [ ] Update existing tasks to default "Personal" board
+
+**Week 3-4: Vector Clocks + Improved Conflict Resolution**
+- [ ] Add `vector_clock` JSONB column to tasks table
+- [ ] Implement vector clock increment/merge logic
+- [ ] Per-field conflict resolution (title → conflict UI)
+- [ ] Side-by-side diff viewer for concurrent title changes
+- [ ] Update sync protocol to include vector clocks
+- [ ] Migration: Initialize vector clocks from LWW timestamps
+
+**Week 5-6: Kiosk Mode**
+- [ ] `/kiosk` route with fullscreen layout
+- [ ] Large touch targets (≥56px), high-contrast design
+- [ ] Today/Overdue/Mine filter chips
+- [ ] Ambient mode: 2-min idle → show next 3 tasks + time/weather
+- [ ] Performance optimization: cold start <3s on Fire HD 8
+- [ ] E2E test: kiosk flow on tablet viewport
+
+**Week 7-8: Voice via Home Assistant Assist**
+- [ ] Define Assist intents: `AddTodo`, `ListToday`, `CompleteTodo`
+- [ ] Intent handlers in HA integration (Python)
+- [ ] Sentence templates with slot filling (board, due date, task)
+- [ ] Confirmation: spoken response + visual Undo chip
+- [ ] Test with 20 voice phrases; measure accuracy
+
+**Week 9-10: Presence Awareness + Smart Digests**
+- [ ] Subscribe to HA `person` entity state changes
+- [ ] Notification deferral logic (if nobody home → defer to arrival + 30 min)
+- [ ] Arrival notification: "3 tasks waiting for you"
+- [ ] Service Worker: schedule morning (08:00) and evening (18:00) digests
+- [ ] Settings: "Notify me anyway" override
+
+**Week 11-12: Lovelace Card + Polish**
+- [ ] Lit custom card: `type: custom:haboard-card`
+- [ ] Config options: board, view (today/week/all), max items
+- [ ] Bridge: postMessage or shared WebSocket topic
+- [ ] HACS integration for easy distribution
+- [ ] Actionable notifications: Add Complete and Snooze buttons
+- [ ] Bug fixes from beta tester feedback
+- [ ] Deploy to all 20+ beta testers
+
+**Week 13-14: Beta Testing & Feedback**
+- [ ] 4-week beta testing period
+- [ ] Weekly feedback sessions with testers
+- [ ] Bug fixes and polish based on feedback
+- [ ] Collect metrics: DAU, session time, kiosk usage, voice accuracy
+- [ ] Go/No-Go review for V1.0
+
+### Phase Transition: MVP → Beta Checklist
+
+**Before starting Beta development:**
+- [ ] MVP deployed for 2+ weeks with 5+ pilot users
+- [ ] All MVP success metrics met (see MVP Success Metrics section)
+- [ ] User feedback collected and analyzed
+- [ ] Go decision from stakeholder review
+- [ ] Beta testers recruited (20-50 people)
+- [ ] Beta feedback channel set up (Discord/GitHub Discussions)
+
+**Migration tasks:**
+- [ ] Backup all user data (SQLite export)
+- [ ] Run database migration (add boards, vector_clocks)
+- [ ] Validate migration: spot-check 10 tasks
+- [ ] Deploy new integration version
+- [ ] Deploy new PWA version
+- [ ] Monitor for 48 hours: error rates, sync reliability
 
 ---
 
@@ -378,6 +976,167 @@ Each phase delivers **real user value** and validates assumptions before buildin
 - ✅ Security audit passed (no critical vulnerabilities)
 - ✅ Accessibility audit passed (axe-core + manual testing)
 - ✅ 5 pilot families complete flows without guidance
+
+### Technical Milestones (V1.0)
+
+**Prerequisites:**
+- ✅ Beta deployed for 4+ weeks with 20+ users
+- ✅ Go decision from Beta → V1.0 gate
+- ✅ 100+ beta testers recruited for V1.0
+- ✅ Optional: PostgreSQL upgrade completed (if needed for scale)
+
+**Week 1-2: Calendar Integration Foundation**
+- [ ] Add `calendar_blocks` table for time blocks
+- [ ] HA calendar entity: `calendar.<board>_deadlines`
+- [ ] API: Read HA calendar events, create time blocks
+- [ ] Frontend: Calendar view (week grid with tasks + events)
+- [ ] Drag task to day → set due date
+- [ ] E2E test: drag task, verify due date updated
+
+**Week 3-4: Time Blocking**
+- [ ] Task duration field (15m, 30m, 1h, 2h, custom)
+- [ ] Create calendar block from task (duration → block)
+- [ ] Conflict detection: warn when overbooking
+- [ ] Sync with HA calendar (bidirectional)
+- [ ] Settings: Working hours, break times
+
+**Week 5-6: Smart Suggestions (Weather + Energy)**
+- [ ] Weather integration: subscribe to HA weather entity
+- [ ] Rule engine: "Mow lawn" → suggest next dry daylight window
+- [ ] Energy tariff: subscribe to `sensor.energy_price`
+- [ ] Rule: "Run dishwasher" → suggest low-rate window
+- [ ] User feedback: Accept/Reject buttons; track for ML
+- [ ] Settings: Enable/disable suggestion categories
+
+**Week 7-8: Sensor-Triggered Tasks**
+- [ ] Event listener: HA state changes (washer done, low battery, etc.)
+- [ ] Trigger config: Define sensor → task mappings (UI or YAML)
+- [ ] Auto-create task on trigger: "Move laundry to dryer" (20 min due)
+- [ ] Notification: "Task created by automation"
+- [ ] Examples: HVAC runtime, battery levels, door/window sensors
+
+**Week 9-10: Device-Linked Completion + Zone Notifications**
+- [ ] Device completion: Listen for scene/script/automation completion
+- [ ] Auto-complete linked tasks: "Vacuum living room" done when robot finishes
+- [ ] Zone-based notifications: Enter grocery zone → show grocery list
+- [ ] Geofence setup: Map HA zones to task boards/tags
+- [ ] Settings: Enable/disable zone notifications
+
+**Week 11-12: Advanced Collaboration (Roles + Activity Log)**
+- [ ] Per-board roles: Viewer, Commenter, Editor
+- [ ] Role enforcement: API + UI permission checks
+- [ ] Activity log: `activity_log` table (append-only)
+- [ ] Activity UI: Filter by user, action type, date range
+- [ ] Export activity: CSV/JSON download
+- [ ] Private tasks: Visible only to creator + assignee
+
+**Week 13-14: Board Organization (Sections/Pages)**
+- [ ] Add `sections` table: belongs to board
+- [ ] Section CRUD: API + UI
+- [ ] Drag tasks between sections (preserve metadata)
+- [ ] Collapsible sections: Show progress bar, next due task
+- [ ] Section templates: "Project", "Routine", "Errands"
+
+**Week 15-16: Weekly Planning Ritual**
+- [ ] Service Worker: Sunday 18:00 prompt "Plan your week?"
+- [ ] Planning mode UI: Show unscheduled tasks + overdue
+- [ ] Auto-distribute: Spread tasks across week (algorithm)
+- [ ] Drag to refine schedule before saving
+- [ ] Save → bulk update due dates
+- [ ] Settings: Planning day/time customization
+
+**Week 17-18: Grocery & Errands Flow**
+- [ ] "Shopping mode": Optimized for in-store use
+- [ ] Aisle/category organization (user-defined)
+- [ ] Quick add from template: common items
+- [ ] Share list: QR code or link
+- [ ] Mark items as "in cart" (visual feedback)
+- [ ] Auto-archive: completed items after 24h
+
+**Week 19-20: Accessibility (WCAG AAA)**
+- [ ] Contrast audit: All colors ≥7:1 ratio
+- [ ] Screen reader testing: NVDA (Windows) + VoiceOver (iOS/Mac)
+- [ ] Keyboard navigation: All interactions accessible (Tab, Enter, Escape, Arrow keys)
+- [ ] ARIA labels: All interactive elements properly labeled
+- [ ] Focus indicators: High-contrast, visible on all elements
+- [ ] Motion-reduced mode: Respect `prefers-reduced-motion`
+- [ ] Child mode: Larger targets (72px), simplified UI
+- [ ] Accessibility statement page
+
+**Week 21-22: Internationalization (i18n)**
+- [ ] `svelte-i18n` setup: Extract all strings to locale files
+- [ ] Locale files: en-US, es-ES, fr-FR, de-DE, pt-BR (initial set)
+- [ ] RTL support: CSS logical properties (start/end vs left/right)
+- [ ] Timezone handling: `Intl.DateTimeFormat`, DST-safe
+- [ ] Localized NLP: chrono multi-locale parsing
+- [ ] Currency/number formatting: `Intl.NumberFormat`
+- [ ] Date/time formatting: User's locale preference
+- [ ] Locale detection: HA user settings → browser → default
+
+**Week 23-24: Security Audit + Polish**
+- [ ] Security audit: OWASP Top 10 review
+- [ ] SQL injection prevention: Parameterized queries (verify)
+- [ ] XSS prevention: Sanitize all user input
+- [ ] CSRF protection: Verify tokens on all mutations
+- [ ] Rate limiting: API endpoints (prevent abuse)
+- [ ] Content Security Policy: Strict CSP headers
+- [ ] Dependency audit: `npm audit`, `safety` (Python)
+- [ ] Penetration testing: Hire external auditor or run automated tools
+
+**Week 25-26: Performance Optimization**
+- [ ] Bundle analysis: Lazy-load non-critical features
+- [ ] Image optimization: WebP, responsive sizes
+- [ ] Database optimization: Query profiling, add indexes
+- [ ] Cache tuning: Service Worker strategies
+- [ ] Lighthouse CI: Enforce scores ≥90
+- [ ] Load testing: Simulate 1000 concurrent users
+- [ ] Memory leak detection: Chrome DevTools profiling
+
+**Week 27-28: Beta Testing (100+ users)**
+- [ ] Deploy V1.0 beta to 100+ testers
+- [ ] 4-week beta testing period
+- [ ] Weekly feedback sessions (online meetings)
+- [ ] Bug triage: Prioritize critical/high bugs
+- [ ] Performance monitoring: Sentry, LogRocket
+- [ ] User surveys: NPS, feature satisfaction
+- [ ] Go/No-Go review for public release
+
+**Week 29-30: Production Hardening + Launch Prep**
+- [ ] Final bug fixes from beta feedback
+- [ ] Production infrastructure: Monitoring, alerting
+- [ ] Rollback plan: Document and test
+- [ ] Launch checklist: All quality gates passed
+- [ ] Marketing materials: Screenshots, demo video
+- [ ] Documentation: User guides, API docs
+- [ ] Community engagement: HA forums, Reddit, Discord
+- [ ] Press release: Home Assistant blog, social media
+
+**Week 31-32: Public Release 🚀**
+- [ ] Deploy to production
+- [ ] Announce on HA community forums
+- [ ] HACS listing (if not already)
+- [ ] Monitor for 72 hours: Error rates, performance
+- [ ] Hotfix any critical issues
+- [ ] Celebrate! 🎉
+
+### Phase Transition: Beta → V1.0 Checklist
+
+**Before starting V1.0 development:**
+- [ ] Beta deployed for 4+ weeks with 20+ daily users
+- [ ] All Beta success metrics met (see Beta Success Metrics section)
+- [ ] User feedback analyzed: prioritize most-requested features
+- [ ] Go decision from stakeholder review
+- [ ] 100+ beta testers recruited for V1.0
+- [ ] PostgreSQL upgrade completed (if performance requires it)
+- [ ] V1.0 roadmap reviewed and approved
+
+**Migration tasks:**
+- [ ] Backup all user data (SQLite/PostgreSQL export)
+- [ ] Run database migration (add calendar_blocks, sections, activity_log, roles)
+- [ ] Validate migration: automated tests + manual spot-checks
+- [ ] Deploy new integration version (staged rollout)
+- [ ] Deploy new PWA version (staged rollout)
+- [ ] Monitor for 1 week: error rates, sync reliability, user reports
 
 ---
 

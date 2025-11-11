@@ -1,0 +1,35 @@
+{
+  "recommendations": [
+    // Python
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    "ms-python.black-formatter",
+    "charliermarsh.ruff",
+
+    // Frontend
+    "svelte.svelte-vscode",
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+
+    // Testing
+    "hbenl.vscode-test-explorer",
+    "ZixuanChen.vitest-explorer",
+
+    // Git & GitHub
+    "eamodio.gitlens",
+    "GitHub.vscode-pull-request-github",
+
+    // General Development
+    "editorconfig.editorconfig",
+    "streetsidesoftware.code-spell-checker",
+    "usernamehw.errorlens",
+    "wayou.vscode-todo-highlight",
+    "yzhang.markdown-all-in-one",
+
+    // Dev Containers
+    "ms-vscode-remote.remote-containers"
+  ],
+  "unwantedRecommendations": [
+    "ms-python.pylint"
+  ]
+}
