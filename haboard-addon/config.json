@@ -1,0 +1,17 @@
+{
+  "name": "HABoard (Local Testing)",
+  "version": "0.1.0",
+  "slug": "haboard-local",
+  "description": "Offline-first To-Do PWA for Home Assistant - Local testing version with automatic installation",
+  "url": "https://github.com/Fab585/HAA_ToDo",
+  "arch": ["armhf", "armv7", "aarch64", "amd64", "i386"],
+  "startup": "once",
+  "boot": "manual",
+  "init": false,
+  "homeassistant_api": false,
+  "hassio_api": true,
+  "hassio_role": "default",
+  "map": ["config:rw"],
+  "options": {},
+  "schema": {}
+}
