@@ -42,10 +42,10 @@ You need to get the `haboard-addon` folder onto your Home Assistant instance.
 1. Open File Explorer
 2. Navigate to `\\wsl.localhost\Ubuntu\home\fabri\HAA_ToDo\haboard-addon`
 3. Copy the entire `haboard-addon` folder
-4. Navigate to `\\192.168.50.108\addons` (your HA Samba share)
+4. Navigate to `\\192.168.1.100\addons` (your HA Samba share)
 5. Paste the folder there
 
-You should have: `\\192.168.50.108\addons\haboard-addon\`
+You should have: `\\192.168.1.100\addons\haboard-addon\`
 
 ### Method B: SSH/Terminal (Alternative)
 
@@ -57,7 +57,7 @@ cd /home/fabri/HAA_ToDo
 tar -czf haboard-addon.tar.gz haboard-addon/
 
 # Transfer to HA (replace with your method)
-scp haboard-addon.tar.gz root@192.168.50.108:/tmp/
+scp haboard-addon.tar.gz root@192.168.1.100:/tmp/
 
 # On Home Assistant terminal
 cd /addons
@@ -154,7 +154,7 @@ You should see: "HABoard is now available"
 
 Open in your browser:
 ```
-http://192.168.50.108:8123/local/haboard/
+http://192.168.1.100:8123/local/haboard/
 ```
 
 You should see:
@@ -193,7 +193,7 @@ cp -r custom_components/haboard haboard-addon/
 cp -r frontend/build haboard-addon/www
 
 # 5. Transfer to HA (same as Step 1)
-# Copy haboard-addon folder to \\192.168.50.108\addons\
+# Copy haboard-addon folder to \\192.168.1.100\addons\
 ```
 
 ### On Home Assistant:
@@ -365,7 +365,7 @@ The integration files stay the same - you're just changing the distribution meth
 | **Database** | `/config/haboard/haboard.db` |
 | **Add-on logs** | Settings → Add-ons → HABoard → Log tab |
 | **HA logs** | Settings → System → Logs → Home Assistant Core |
-| **Access URL** | `http://192.168.50.108:8123/local/haboard/` |
+| **Access URL** | `http://192.168.1.100:8123/local/haboard/` |
 
 ---
 

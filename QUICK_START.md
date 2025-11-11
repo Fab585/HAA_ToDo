@@ -20,10 +20,10 @@
 **From Windows Explorer**:
 ```
 Source:  \\wsl.localhost\Ubuntu\home\fabri\HAA_ToDo\haboard-addon
-Destination: \\192.168.50.108\addons\haboard-addon
+Destination: \\192.168.1.100\addons\haboard-addon
 ```
 
-**Result**: You should have `\\192.168.50.108\addons\haboard-addon\config.json`
+**Result**: You should have `\\192.168.1.100\addons\haboard-addon\config.json`
 
 ---
 
@@ -60,7 +60,7 @@ Destination: \\192.168.50.108\addons\haboard-addon
 ### Step 5: Open HABoard
 
 ```
-http://192.168.50.108:8123/local/haboard/
+http://192.168.1.100:8123/local/haboard/
 ```
 
 Create your first task - done! 🎉
