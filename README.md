@@ -9,7 +9,21 @@
 [![Tests](https://img.shields.io/badge/tests-106%20passing-success)]()
 [![Accessibility](https://img.shields.io/badge/WCAG%202.1-compliant-success)]()
 
-> 🎉 **v0.1.0 Released!** Production-ready MVP with 106 passing tests, WCAG 2.1 accessibility, and comprehensive offline support. Ready for beta testing!
+> 🎉 **v0.1.0 Released!** Production-ready MVP with 106 passing tests, WCAG 2.1 accessibility, and comprehensive offline support.
+
+## 🧪 Beta Testing Program - NOW RECRUITING!
+
+**We need 5-10 beta testers!** Help shape HABoard's future by testing v0.1.0 for 2 weeks and providing feedback.
+
+**What you get:**
+- Early access to all features
+- Direct input on v0.5 roadmap
+- Priority support
+- Listed in contributors (optional)
+
+**Time commitment:** ~2 hours total over 2 weeks
+
+**👉 [Sign Up for Beta Testing](BETA_RECRUITMENT.md)** | **[Read Full Program Details](BETA_RECRUITMENT.md)**
 
 ---
 
