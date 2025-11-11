@@ -203,9 +203,9 @@ def setup_websocket(hass: HomeAssistant) -> WebSocketManager:
         WebSocketManager instance
     """
     # Register WebSocket commands
-    hass.components.websocket_api.async_register_command(websocket_subscribe)
-    hass.components.websocket_api.async_register_command(websocket_unsubscribe)
-    hass.components.websocket_api.async_register_command(websocket_ping)
+    websocket_api.async_register_command(hass, websocket_subscribe)
+    websocket_api.async_register_command(hass, websocket_unsubscribe)
+    websocket_api.async_register_command(hass, websocket_ping)
 
     # Create and return WebSocket manager
     ws_manager = WebSocketManager(hass)

@@ -79,8 +79,8 @@ class Database:
         """Create database schema from schema.sql file."""
         schema_file = Path(__file__).parent / "schema.sql"
 
-        with open(schema_file, "r") as f:
-            schema_sql = f.read()
+        # Read schema file (Path.read_text() is acceptable for small files during setup)
+        schema_sql = schema_file.read_text()
 
         # Execute schema in a transaction
         await self._conn.executescript(schema_sql)
