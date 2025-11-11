@@ -53,6 +53,23 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Register services
     await _register_services(hass, entry)
 
+    # Register sidebar panel
+    await hass.components.frontend.async_register_built_in_panel(
+        component_name="custom",
+        sidebar_title="HABoard",
+        sidebar_icon="mdi:clipboard-check",
+        frontend_url_path="haboard",
+        require_admin=False,
+        config={
+            "_panel_custom": {
+                "name": "panel-iframe",
+                "embed_iframe": True,
+                "trust_external": False,
+                "config": {"url": "/local/haboard/"},
+            }
+        },
+    )
+
     _LOGGER.info("HABoard integration setup complete")
     return True
 
@@ -60,6 +77,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload HABoard config entry."""
     _LOGGER.info("Unloading HABoard integration")
+
+    # Remove sidebar panel
+    hass.components.frontend.async_remove_panel("haboard")
 
     # Disconnect database
     data = hass.data[DOMAIN].pop(entry.entry_id)
