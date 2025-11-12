@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import shutil
 from pathlib import Path
 
 from homeassistant.config_entries import ConfigEntry
@@ -27,6 +28,29 @@ SERVICE_CREATE_TASK_SCHEMA = vol.Schema({
 })
 
 
+async def _setup_frontend_files(hass: HomeAssistant) -> None:
+    """Copy frontend files to www directory.
+
+    Args:
+        hass: Home Assistant instance
+    """
+    source_dir = Path(__file__).parent / "www"
+    target_dir = Path(hass.config.path("www")) / "haboard"
+
+    if not source_dir.exists():
+        _LOGGER.warning("Frontend source directory not found: %s", source_dir)
+        return
+
+    # Copy files in executor to avoid blocking I/O
+    def _copy_files():
+        if target_dir.exists():
+            shutil.rmtree(target_dir)
+        shutil.copytree(source_dir, target_dir)
+        _LOGGER.info("Frontend files copied to %s", target_dir)
+
+    await hass.async_add_executor_job(_copy_files)
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up HABoard from a config entry."""
     _LOGGER.info("Setting up HABoard integration")
@@ -34,6 +58,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Initialize database
     config_dir = Path(hass.config.path())
     db = await get_database(config_dir)
+
+    # Copy frontend files to www directory
+    await _setup_frontend_files(hass)
 
     # Set up WebSocket support
     ws_manager = setup_websocket(hass)
