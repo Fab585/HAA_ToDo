@@ -1,7 +1,7 @@
 {
   "domain": "haboard",
   "name": "HABoard",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "documentation": "https://github.com/Fab585/HAA_ToDo",
   "issue_tracker": "https://github.com/Fab585/HAA_ToDo/issues",
   "codeowners": ["@Fab585"],
