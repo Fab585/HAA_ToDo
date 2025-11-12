@@ -1,6 +1,6 @@
 {
   "name": "HABoard (Local Testing)",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "slug": "haboard-local",
   "description": "Offline-first To-Do PWA for Home Assistant - Local testing version with automatic installation",
   "url": "https://github.com/Fab585/HAA_ToDo",

@@ -8,38 +8,34 @@ VERSION=$(grep '"version"' custom_components/haboard/manifest.json | cut -d'"' -
 echo "Version: $VERSION"
 
 # Clean old files
-rm -rf haboard-addon/haboard
-rm -rf haboard-addon/www
+rm -rf haboard-local/haboard
+rm -rf haboard-local/www
 
 # Copy integration
 echo "Copying integration..."
-cp -r custom_components/haboard haboard-addon/
+cp -r custom_components/haboard haboard-local/
 
 # Copy frontend (from bundled www)
 echo "Copying frontend..."
-cp -r custom_components/haboard/www haboard-addon/
+cp -r custom_components/haboard/www haboard-local/
 
 # Update add-on version
 echo "Updating add-on version to $VERSION..."
-sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" haboard-addon/config.json
-sed -i "s/v[0-9]\+\.[0-9]\+\.[0-9]\+/v$VERSION/g" haboard-addon/run.sh
+sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" haboard-local/config.json
+sed -i "s/v[0-9]\+\.[0-9]\+\.[0-9]\+/v$VERSION/g" haboard-local/run.sh
 
 echo "✓ Add-on synced to v$VERSION"
 echo ""
-echo "Files ready in haboard-addon/"
+echo "Files ready in haboard-local/"
 echo ""
 echo "Next steps:"
-echo "1. Transfer haboard-addon/ to HA"
-echo "   Method A (if Samba mounted): cp -r haboard-addon /mnt/ha-addons/"
-echo "   Method B (if SSH works): scp -r haboard-addon root@192.168.50.108:/addons/"
-echo "   Method C (manual): Use File Editor or Terminal & SSH addon"
+echo "1. Git commit and push (Supervisor pulls from GitHub)"
+echo "   git add -A && git commit -m 'Update' && git push"
 echo ""
 echo "2. In Home Assistant Supervisor:"
-echo "   - Go to Add-on Store"
-echo "   - Find 'HABoard (Local Testing)'"
-echo "   - Click 'Rebuild' (takes 2-3 minutes)"
-echo "   - Click 'Start'"
-echo "   - Check logs for success"
+echo "   - Go to Add-on Store → HABoard (Local Testing)"
+echo "   - Click 'Update' button (if available)"
+echo "   - Or remove/re-add repository to force refresh"
 echo ""
 echo "3. Restart Home Assistant"
 echo "   - Settings → System → Restart"
