@@ -8,25 +8,25 @@ VERSION=$(grep '"version"' custom_components/haboard/manifest.json | cut -d'"' -
 echo "Version: $VERSION"
 
 # Clean old files
-rm -rf haboard-local/haboard
-rm -rf haboard-local/www
+rm -rf haboard-addon/haboard
+rm -rf haboard-addon/www
 
 # Copy integration
 echo "Copying integration..."
-cp -r custom_components/haboard haboard-local/
+cp -r custom_components/haboard haboard-addon/
 
 # Copy frontend (from bundled www)
 echo "Copying frontend..."
-cp -r custom_components/haboard/www haboard-local/
+cp -r custom_components/haboard/www haboard-addon/
 
 # Update add-on version
 echo "Updating add-on version to $VERSION..."
-sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" haboard-local/config.json
-sed -i "s/v[0-9]\+\.[0-9]\+\.[0-9]\+/v$VERSION/g" haboard-local/run.sh
+sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" haboard-addon/config.json
+sed -i "s/v[0-9]\+\.[0-9]\+\.[0-9]\+/v$VERSION/g" haboard-addon/run.sh
 
 echo "✓ Add-on synced to v$VERSION"
 echo ""
-echo "Files ready in haboard-local/"
+echo "Files ready in haboard-addon/"
 echo ""
 echo "Next steps:"
 echo "1. Git commit and push (Supervisor pulls from GitHub)"
