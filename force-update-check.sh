@@ -1,0 +1,20 @@
+#!/bin/bash
+# Force Home Assistant Supervisor to check for add-on updates
+
+echo "This script forces Supervisor to check for add-on updates."
+echo ""
+echo "Run these commands in your Home Assistant Terminal & SSH addon:"
+echo ""
+echo "# 1. Clear Supervisor cache"
+echo "ha supervisor reload"
+echo ""
+echo "# 2. Force update check"
+echo "ha supervisor refresh"
+echo ""
+echo "# 3. Check add-on status"
+echo "ha addons info local_haboard-local"
+echo ""
+echo "# 4. If update is detected, update the add-on"
+echo "ha addons update local_haboard-local"
+echo ""
+echo "Wait 30 seconds after each command before running the next one."

@@ -3,7 +3,7 @@
 
 set -e
 
-bashio::log.info "Installing HABoard v0.1.4..."
+bashio::log.info "Installing HABoard v0.1.5..."
 
 # Create directories
 mkdir -p /config/custom_components
